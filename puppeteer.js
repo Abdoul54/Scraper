@@ -15,7 +15,6 @@ const coursera = {
     "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]",
   ratings:
     "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
-
 };
 
 const scrapeCourseData = async () => {
@@ -67,7 +66,6 @@ const scrapeCourseData = async () => {
 
     const modules = [];
     // const modules = document.querySelectorAll(coursera.modules);
-
 
     const skills = [];
     document.querySelectorAll(".css-yk0mzy > .css-0").forEach((item) => {
@@ -141,8 +139,8 @@ const scrapeCourseData = async () => {
         videos: moduleVideos,
         readings: moduleReadings,
         quizzes: moduleQuizzes,
-		discussionPrompt: moduleDiscussionPrompt,
-		plugin: modulePlugin
+        discussionPrompt: moduleDiscussionPrompt,
+        plugin: modulePlugin,
       };
       modules.push(moduleData);
     }
