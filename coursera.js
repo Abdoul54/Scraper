@@ -1,11 +1,10 @@
 const puppeteer = require("puppeteer");
-const { saveDataToJSON } = require("./fs");
 // const { saveDataToJSON } = require("./fs");
 
-const urls = [
-  "https://www.coursera.org/learn/project-management-basics",
-  "https://www.coursera.org/learn/project-management-foundations",
-];
+// const urls = [
+//   "https://www.coursera.org/learn/project-management-basics",
+//   "https://www.coursera.org/learn/project-management-foundations",
+// ];
 
 /**
  * This object contains the XPath of the elements to extract from the Coursera course page.
@@ -21,7 +20,8 @@ const urls = [
  * @property {string} languages - The XPath of the languages in which the course is available.
  */
 const coursera = {
-  name: "//*[@id='rendered-content']/div/main/section[2]/div/div/div[1]/div[1]/section/h1",
+  name: "//h1[@data-e2e='hero-title']",
+  //"//*[@id='rendered-content']/div/main/section[2]/div/div/div[1]/div[1]/section/h1",
   orga: "//*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
   brief: "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]",
   programme:
@@ -33,7 +33,7 @@ const coursera = {
   ratings:
     "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
   debut: null,
-  languages: "//*[@id='cds-react-aria-8']/div[3]/div/div/div[2]/div[2]/p[2]",
+  languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
 };
 
 /**
@@ -58,6 +58,20 @@ const extractText = async (page, xpath) => {
 };
 
 /**
+ *
+ * @param {url} url	URL of the webpage to check.
+ * @returns {boolean}	A boolean indicating whether the URL exists.
+ *
+ */
+const checkURLExists = async (url) => {
+  console.log("Checking URL:", url);
+  url = url.split("#")[0];
+  console.log("URL after split:", url); 
+  const response = await fetch(url, { method: "HEAD" });
+  return response.url === url && response.ok;
+};
+
+/**
  * This function uses Puppeteer to scrape data from a given array of URLs.
  *
  * @param {string[]} urls - An array of URLs of the webpages to scrape.
@@ -71,46 +85,65 @@ const extractText = async (page, xpath) => {
  * - languages: The languages in which the course is available.
  *
  */
+
 const scrapeCourseData = async (urls) => {
   let browser;
   let languages;
+  let notFound = [];
+  let i = 0;
+  let lanErrors = [];
   try {
     browser = await puppeteer.launch();
     const coursesData = [];
     for (const url of urls) {
-      let course = {
-        title: null,
-        orga: null,
-        brief: null,
-        programme: null,
-        animateur: null,
-        languages: null
+      i++;
+      languages = null;
+      console.log(`Checking URL n°${i} : ${url}`);
+      const pageExists = await checkURLExists(url);
+      if (!pageExists) {
+        console.log("URL does not exist:", url);
+        notFound.push(url);
+        continue; // Skip to the next URL
       }
+
       console.log("Scraping data from:", url);
       const page = await browser.newPage();
       await page.goto(url);
 
       // Check if the initial selector exists
-      const selectorExists = await page.$("#rendered-content > div > main > section.css-oe48t8 > div > div > div.cds-9.css-0.cds-11.cds-grid-item.cds-56.cds-80 > div.css-1psltl0 > section > div:nth-child(3) > div > button > span > span");
+      const selectorExists = await page.$(
+        "xpath///div[2]/div/button/span/span"
+      );
+      console.log("selectorExists", selectorExists);
 
+      //   div[2]/div/button/span/span
+      //   div[2]/div/button/span/span
       if (selectorExists) {
-        await page.click("#rendered-content > div > main > section.css-oe48t8 > div > div > div.cds-9.css-0.cds-11.cds-grid-item.cds-56.cds-80 > div.css-1psltl0 > section > div:nth-child(3) > div > button > span > span");
-
-        await page.waitForSelector("#cds-react-aria-8 > div.cds-Modal-container > div > div");
-        languages = await extractText(page, coursera.languages).then(languages => languages.split(',').map(lang => lang.trim()));
+        await page.click("xpath///div[2]/div/button/span/span")
+        languages = await extractLanguages(page, coursera.languages);
+        Languages= languages.split(",").map((language) => language.trim())
       }
+
       const [title, orga, brief, programme, animateur] = await Promise.all([
         extractText(page, coursera.name),
         extractText(page, coursera.orga),
         extractText(page, coursera.brief),
-        extractText(page, coursera.programme).then(programme => programme.replace(/\n+/g, ' ').replace(/\s+/g, ' ')),
+        extractText(page, coursera.programme).then((programme) =>
+          programme.replace(/\n+/g, " ").replace(/\s+/g, " ")
+        ),
         extractText(page, coursera.animateur),
-        extractText(page, coursera.languages)?.then(languages => languages.split(',').map(lang => lang.trim())),
       ]);
-      
+
       page.close();
-      coursesData.push({ title, orga, brief, programme, animateur, languages });
-      saveDataToJSON({ title, orga, brief, programme, animateur, languages });
+      coursesData.push({
+        title,
+        url,
+        orga,
+        brief,
+        programme,
+        animateur,
+        languages,
+      });
     }
 
     return coursesData;
@@ -119,13 +152,27 @@ const scrapeCourseData = async (urls) => {
   } finally {
     if (browser) {
       await browser.close();
+      console.log("URLs not found or no longer exist: ", notFound);
+      console.log("Errors extracting languages: ", lanErrors);
     }
   }
 };
 
-// Usage example
-scrapeCourseData(urls).then((data) => {
-  console.log(data);
-}).catch((error) => {
-  console.error("Error scraping courses:", error);
-});
+async function extractLanguages(page, selector) {
+  try {
+    const languages = await extractText(page, selector);
+    if (languages) {
+      return languages
+        .split(",")
+        .map((lang) => lang.trim())
+        .join(", ");
+    } else {
+      throw new Error("No languages found");
+    }
+  } catch (error) {
+    console.error("Error extracting languages:", error);
+    throw error;
+  }
+}
+
+module.exports = { scrapeCourseData };

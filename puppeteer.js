@@ -28,7 +28,7 @@ const coursera = {
   ratings:
     "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
   debut: null,
-  languages: "//*[@id='cds-react-aria-8']/div[3]/div/div/div[2]/div[2]/p[2]",
+  languages: "//*[@class='cds-Dialog-dialog']/div[2]/div[2]/p[2]",
 };
 
 /**
@@ -76,7 +76,7 @@ const scrapeCourseData = async (url) => {
 
   await page.click("#rendered-content > div > main > section.css-oe48t8 > div > div > div.cds-9.css-0.cds-11.cds-grid-item.cds-56.cds-80 > div.css-1psltl0 > section > div:nth-child(3) > div > button > span > span");
 
-  await page.waitForSelector("#cds-react-aria-8 > div.cds-Modal-container > div > div");
+  await page.waitForSelector(coursera.languages);
 
   const [title, orga, brief, programme, animateur, languages] = await Promise.all([
     extractText(page, coursera.name),
