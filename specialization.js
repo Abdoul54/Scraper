@@ -1,7 +1,6 @@
 const puppeteer = require("puppeteer");
 
-const url =
-  "https://www.coursera.org/specializations/improve-english";
+const url = "https://www.coursera.org/specializations/improve-english";
 
 const coursera = {
   name: "//h1[@data-e2e='hero-title']",
