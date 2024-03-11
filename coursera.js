@@ -1,178 +1,209 @@
 const puppeteer = require("puppeteer");
-// const { saveDataToJSON } = require("./fs");
+const { saveDataToJSON } = require("./fs");
 
-// const urls = [
-//   "https://www.coursera.org/learn/project-management-basics",
-//   "https://www.coursera.org/learn/project-management-foundations",
-// ];
+class Coursera {
+  constructor(url) {
+    this.url = url;
+    this.selectors = {
+      name: "//h1[@data-e2e='hero-title']",
+      orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
+      //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
+      brief:
+        "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
+      programme: "//*[@data-e2e='sdp-course-list-link']",
+      animateur:
+        '//*[@class="cds-9 css-1gjys39 cds-11 cds-grid-item cds-56 cds-78"]/div/div[2]/div/a[@data-track-component="hero_instructor"]/span',
+      duration:
+        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]",
+      ratings:
+        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
+      languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
+    };
+    this.type = this.checkType(url);
+  }
 
-/**
- * This object contains the XPath of the elements to extract from the Coursera course page.
- * @type {Object}
- * @property {string} name - The XPath of the course title.
- * @property {string} orga - The XPath of the organization that offers th e course.
- * @property {string} brief - The XPath of the brief description of the course.
- * @property {string} programme - The XPath of the course program.
- * @property {string} animateur - The XPath of the course animator.
- * @property {string} duration - The XPath of the course duration.
- * @property {string} ratings - The XPath of the course ratings.
- * @property {string} debut - The XPath of the course debut date.
- * @property {string} languages - The XPath of the languages in which the course is available.
- */
-const coursera = {
-  name: "//h1[@data-e2e='hero-title']",
-  //"//*[@id='rendered-content']/div/main/section[2]/div/div/div[1]/div[1]/section/h1",
-  orga: "//*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
-  brief: "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]",
-  programme:
-    "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[2]",
-  animateur:
-    "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]/div[1]/a/span",
-  duration:
-    "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]",
-  ratings:
-    "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
-  debut: null,
-  languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
-};
+  switchToModules = (selectors) => {
+    selectors.orga = selectors.orga.replace("courses", "modules");
+    selectors.brief =
+      "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
+    selectors.programme =
+      "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[2]";
+    selectors.animateur =
+      "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]/div[1]/a/span";
+  };
+  checkType(url) {
+    // Implementation of checkType function
+    let result = url.includes("specializations")
+      ? "specialization"
+      : url.includes("learn")
+      ? "module"
+      : "certificate";
+    if (result === "module") {
+      this.switchToModules(this.selectors);
+    }
+    return result;
+  }
 
-/**
- * This function uses Puppeteer to extract text content from a given XPath.
- * @param {Page} page - The Puppeteer page object.
- * @param {string} xpath - The XPath of the element to extract.
- * @returns {Promise<string>} A promise that resolves to the text content of the element.
- * If the element is not found, the promise resolves to null.
- * @example
- */
-const extractText = async (page, xpath) => {
-  return await page.evaluate((xpath) => {
-    const element = document.evaluate(
-      xpath,
-      document,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null
-    ).singleNodeValue;
-    return element ? element.textContent.trim() : null;
-  }, xpath);
-};
+  async extractText(page, xpath) {
+    // Implementation of extractText function
+    return await page.evaluate((xpath) => {
+      const element = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null
+      ).singleNodeValue;
+      return element ? element.textContent.trim() : null;
+    }, xpath);
+  }
 
-/**
- *
- * @param {url} url	URL of the webpage to check.
- * @returns {boolean}	A boolean indicating whether the URL exists.
- *
- */
-const checkURLExists = async (url) => {
-  console.log("Checking URL:", url);
-  url = url.split("#")[0];
-  console.log("URL after split:", url); 
-  const response = await fetch(url, { method: "HEAD" });
-  return response.url === url && response.ok;
-};
+  async checkURLExists(url) {
+    // Implementation of checkURLExists function
+    try {
+      const response = await fetch(url, { method: "HEAD" });
+      return response.url === url && response.ok;
+    } catch (error) {
+      console.error("Error checking URL:", error);
+      return false;
+    }
+  }
 
-/**
- * This function uses Puppeteer to scrape data from a given array of URLs.
- *
- * @param {string[]} urls - An array of URLs of the webpages to scrape.
- * @returns {Promise<Object>} A promise that resolves to an object containing the scraped data.
- * The object has the following properties:
- * - title: The title of the course.
- * - orga: The organization that offers the course.
- * - brief: A brief description of the course.
- * - programme: The course program.
- * - animateur: The course animator.
- * - languages: The languages in which the course is available.
- *
- */
-
-const scrapeCourseData = async (urls) => {
-  let browser;
-  let languages;
-  let notFound = [];
-  let i = 0;
-  let lanErrors = [];
-  try {
-    browser = await puppeteer.launch();
-    const coursesData = [];
-    for (const url of urls) {
-      i++;
-      languages = null;
-      console.log(`Checking URL n°${i} : ${url}`);
-      const pageExists = await checkURLExists(url);
-      if (!pageExists) {
-        console.log("URL does not exist:", url);
-        notFound.push(url);
-        continue; // Skip to the next URL
-      }
-
-      console.log("Scraping data from:", url);
+  async scrapeCourseData() {
+    // Implementation of scrapeCourseData function
+    let browser;
+    let animateur;
+    let languages;
+    try {
+      browser = await puppeteer.launch();
       const page = await browser.newPage();
-      await page.goto(url);
+      await page.goto(this.url);
 
-      // Check if the initial selector exists
-      const selectorExists = await page.$(
-        "xpath///div[2]/div/button/span/span"
-      );
-      console.log("selectorExists", selectorExists);
-
-      //   div[2]/div/button/span/span
-      //   div[2]/div/button/span/span
-      if (selectorExists) {
-        await page.click("xpath///div[2]/div/button/span/span")
-        languages = await extractLanguages(page, coursera.languages);
-        Languages= languages.split(",").map((language) => language.trim())
+      if (
+        await this.checkElementExistence(
+          page,
+          "xpath///div[2]/div/button/span/span"
+        )
+      ) {
+        await page.click("xpath///div[2]/div/button/span/span");
+        languages = await this.extractLanguages(page, this.selectors.languages);
+        languages = languages.split(",").map((language) => language.trim());
       }
 
-      const [title, orga, brief, programme, animateur] = await Promise.all([
-        extractText(page, coursera.name),
-        extractText(page, coursera.orga),
-        extractText(page, coursera.brief),
-        extractText(page, coursera.programme).then((programme) =>
-          programme.replace(/\n+/g, " ").replace(/\s+/g, " ")
-        ),
-        extractText(page, coursera.animateur),
+      if (
+        await this.checkElementExistence(
+          page,
+          "xpath///div[3]/div/div[1]/button/span"
+        )
+      ) {
+        await page.click("xpath///div[3]/div/div[1]/button/span");
+        animateur = await this.extractAnimateur(page, this.selectors.animateur);
+      }
+
+      const [title, orga, brief, programme] = await Promise.all([
+        this.extractText(page, this.selectors.name),
+        this.extractText(page, this.selectors.orga),
+        this.extractText(page, this.selectors.brief),
+        this.extractProgramme(page, this.selectors.programme),
       ]);
 
-      page.close();
-      coursesData.push({
+      return {
         title,
-        url,
+        url: this.url,
         orga,
+        type: this.type,
         brief,
         programme,
         animateur,
         languages,
-      });
-    }
-
-    return coursesData;
-  } catch (error) {
-    console.error("Error scraping courses:", error);
-  } finally {
-    if (browser) {
-      await browser.close();
-      console.log("URLs not found or no longer exist: ", notFound);
-      console.log("Errors extracting languages: ", lanErrors);
+      };
+    } catch (error) {
+      console.error("Error scraping course data:", error);
+      return null;
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
   }
-};
 
-async function extractLanguages(page, selector) {
-  try {
-    const languages = await extractText(page, selector);
-    if (languages) {
-      return languages
-        .split(",")
-        .map((lang) => lang.trim())
-        .join(", ");
-    } else {
-      throw new Error("No languages found");
+  async extractLanguages(page, selector) {
+    // Implementation of extractLanguages function
+    try {
+      const languages = await this.extractText(page, selector);
+      if (languages) {
+        return languages
+          .split(",")
+          .map((lang) => lang.trim())
+          .join(", ");
+      } else {
+        throw new Error("No languages found");
+      }
+    } catch (error) {
+      console.error("Error extracting languages:", error);
+      throw error;
     }
-  } catch (error) {
-    console.error("Error extracting languages:", error);
-    throw error;
+  }
+
+  async extractProgramme(page, xpath) {
+    // Implementation of extractProgramme function
+    return await page.evaluate((xpath) => {
+      const iterator = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+        null
+      );
+      let element = iterator.iterateNext();
+      const texts = [];
+      while (element) {
+        texts.push(element.textContent.trim());
+        element = iterator.iterateNext();
+      }
+      return texts;
+    }, xpath);
+  }
+
+  async extractAnimateur(page, xpath) {
+    // Implementation of extractAnimateur function
+    return await page.evaluate((xpath) => {
+      const iterator = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+        null
+      );
+      let element = iterator.iterateNext();
+      const texts = [];
+      while (element) {
+        if (!texts.includes(element.textContent.trim())) {
+          texts.push(element.textContent.trim());
+        }
+        element = iterator.iterateNext();
+      }
+      return texts;
+    }, xpath);
+  }
+
+  async checkElementExistence(page, xpath) {
+    // Implementation of checkElementExistence function
+    return await page.$(xpath);
   }
 }
 
-module.exports = { scrapeCourseData };
+(async () => {
+  const data = [];
+  const urls = [
+    "https://www.coursera.org/specializations/improve-english",
+    "https://www.coursera.org/learn/project-management-basics",
+    "https://www.coursera.org/professional-certificates/facebook-social-media-marketing",
+  ];
+  for (const url of urls) {
+    let courseraModel = new Coursera(url);
+    let course = await courseraModel.scrapeCourseData();
+    data.push(course);
+  }
+  saveDataToJSON(data);
+})();

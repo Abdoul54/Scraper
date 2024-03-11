@@ -1,6 +1,6 @@
 // const { scrapeCourseData } = require("./sandbox");
 
-const { scrapeCourseData } = require("./coursera");
+const { scrapeCourseData } = require("./Coursera");
 const { saveDataToJSON } = require("./fs");
 
 // courseraUrls = [

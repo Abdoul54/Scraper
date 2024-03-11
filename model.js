@@ -3,9 +3,32 @@ const puppeteer = require("puppeteer");
 class Coursera {
   constructor(url, courseraSelectors) {
     this.url = url;
-    this.selectors = courseraSelectors;
+    this.selectors = {
+      name: "//h1[@data-e2e='hero-title']",
+      orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
+      //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
+      brief:
+        "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
+      programme: "//*[@data-e2e='sdp-course-list-link']",
+      animateur:
+        '//*[@class="cds-9 css-1gjys39 cds-11 cds-grid-item cds-56 cds-78"]/div/div[2]/div/a[@data-track-component="hero_instructor"]/span',
+      duration:
+        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]",
+      ratings:
+        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
+      languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
+    };
+    this.type = this.checkType(url);
   }
 
+  checkType(url) {
+    // Implementation of checkType function
+    return url.includes("specializations")
+      ? "specialization"
+      : url.includes("courses")
+      ? "course"
+      : "certificate";
+  }
   async extractText(page, xpath) {
     // Implementation of extractText function
     return await page.evaluate((xpath) => {
@@ -71,7 +94,9 @@ class Coursera {
 
       return {
         title,
+        url: this.url,
         orga,
+        type: this.type,
         brief,
         programme,
         animateur,
@@ -154,10 +179,12 @@ class Coursera {
 }
 
 (async () => {
-  const url = "https://www.coursera.org/specializations/improve-english";
-  const courseraSelectors = {
+  const url = "https://www.coursera.org/learn/project-management-basics";
+  //   "https://www.coursera.org/specializations/improve-english";
+  var courseraSelectors = {
     name: "//h1[@data-e2e='hero-title']",
     orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
+    //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
     brief:
       "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
     programme: "//*[@data-e2e='sdp-course-list-link']",
@@ -174,3 +201,10 @@ class Coursera {
   const data = await courseraModel.scrapeCourseData();
   console.log(data);
 })();
+
+//! These are that their xpath differ from type to type
+
+// orga: null,
+// brief: null,
+// programme: [],
+// animateur: undefined,
