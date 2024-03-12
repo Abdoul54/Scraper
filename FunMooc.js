@@ -7,9 +7,11 @@ class FunMoocScraper {
       orga: "//a/meta[@property='name']", //* Good
       brief:
         "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[1]/div/div/p", //? Get all the <p> elements
-      programme: "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[2]/section/div/ul/li/div/button",
+      programme:
+        "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[2]/section/div/ul/li/div/button",
       animateur: "//h3[@class='person-glimpse__title']",
-	  languages: "//*[@id='site-content']/div[1]/div[2]/div/div[1]/div[3]/div[2]/ul/div/li/span"
+      languages:
+        "//*[@id='site-content']/div[1]/div[2]/div/div[1]/div[3]/div[2]/ul/div/li/span",
     };
   }
 
@@ -101,9 +103,11 @@ class FunMoocScraper {
         this.extractText(page, this.openClassrooms.name),
         this.extractAttributeFromAll(page, this.openClassrooms.orga, "content"),
         this.extractMany(page, this.openClassrooms.brief).then((brief) =>
-          brief.join(" ")
+          brief.join("")
         ),
-        this.extractMany(page, this.openClassrooms.animateur),
+        this.extractMany(page, this.openClassrooms.animateur).then(
+          (animateur) => animateur
+        ),
         this.extractText(page, this.openClassrooms.programme),
       ]);
 
@@ -133,9 +137,9 @@ scraper
   .scrapeCourseData(
     "https://www.fun-mooc.fr/fr/cours/orisat-teledetection-des-risques-naturels/"
   )
-  .then((data) => {
-    console.log(data);
-  });
+  .then((data) => data);
 
 //	!  buttons    //section/div/ul/li/div/button
 //	!  subbuttons //section/div/ul/li/div/ul/li/div/button
+// *[@id="site-content"]/div[2]/div[2]/div[1]/section/div/div[2]/div/div/a/h3
+// https://www.fun-mooc.fr/fr/cours/medical-mycology/

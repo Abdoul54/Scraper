@@ -1,9 +1,0 @@
-GET https://www.coursera.org/learn/emotional-intelligence-in-leadership-fr HTTP/1.1
-
-###
-
-###
-GET http://localhost:3000/api/coursera/scrape-course?url=https://www.coursera.org/learn/problem-solving#about HTTP/1.1
-###
-
-GET http://localhost:3000/api/openclassrooms/scrape-course?url=https://openclassrooms.com/en/courses/6067971-gerez-les-instances-representatives-du-personnel HTTP/1.1

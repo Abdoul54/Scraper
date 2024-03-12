@@ -1,5 +1,5 @@
 const express = require("express");
-const Coursera = require("./Coursera");
+const Coursera = require("./coursera");
 const OpenClassrooms = require("./OpenClassroom");
 
 const app = express();
