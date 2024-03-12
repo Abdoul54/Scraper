@@ -1,7 +1,19 @@
 const puppeteer = require("puppeteer");
-const { saveDataToJSON } = require("./fs");
 
-class Coursera {
+/**
+ * CourseraScraper class
+ * @class
+ * @classdesc Class for scraping data from Coursera
+ * @param {String} url
+ * @returns {Object}
+ */
+class CourseraScraper {
+  /**
+   * @constructor
+   * @param {String} url
+   * @returns {Object}
+   * @description Constructor for CourseraScraper class
+   */
   constructor(url) {
     this.url = url;
     this.selectors = {
@@ -22,12 +34,18 @@ class Coursera {
     this.type = this.checkType(url);
   }
 
+  /**
+   * Switches the selectors to the modules page
+   * @param {Object} selectors
+   * @returns {undefined}
+   * @description Switches the selectors to the modules page
+   */
   switchToModules = (selectors) => {
     selectors.orga = selectors.orga.replace("courses", "modules");
     selectors.brief =
       "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
     selectors.programme =
-      "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[2]";
+      "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
     selectors.animateur =
       "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]/div[1]/a/span";
   };
@@ -44,6 +62,14 @@ class Coursera {
     return result;
   }
 
+  /**
+   * Extracts text from a given xpath
+   * @param {Object} page
+   * @param {String} xpath
+   * @returns {String} text
+   * @description Extracts text from a given xpath
+   * @async
+   */
   async extractText(page, xpath) {
     // Implementation of extractText function
     return await page.evaluate((xpath) => {
@@ -58,23 +84,44 @@ class Coursera {
     }, xpath);
   }
 
+  /**
+   * Extracts multiple texts from a given xpath
+   * @param {Object} page
+   * @param {String} xpath
+   * @returns {Array} texts
+   * @description Extracts multiple texts from a given xpath
+   * @async
+   */
   async checkURLExists(url) {
-    // Implementation of checkURLExists function
     try {
+      const parsedURL = new URL(url);
+      url = `${parsedURL.origin}${parsedURL.pathname}${parsedURL.search}`;
       const response = await fetch(url, { method: "HEAD" });
-      return response.url === url && response.ok;
+
+      return (
+        parsedURL.pathname === new URL(response.url).pathname && response.ok
+      );
     } catch (error) {
       console.error("Error checking URL:", error);
       return false;
     }
   }
 
+  /**
+   * Scrapes course data from Coursera
+   * @returns {Object} course
+   * @description Scrapes course data from Coursera
+   * @async
+   */
   async scrapeCourseData() {
     // Implementation of scrapeCourseData function
     let browser;
     let animateur;
     let languages;
     try {
+      if (!(await this.checkURLExists(this.url))) {
+        throw new Error("URL does not exist");
+      }
       browser = await puppeteer.launch();
       const page = await browser.newPage();
       await page.goto(this.url);
@@ -87,7 +134,6 @@ class Coursera {
       ) {
         await page.click("xpath///div[2]/div/button/span/span");
         languages = await this.extractLanguages(page, this.selectors.languages);
-        languages = languages.split(",").map((language) => language.trim());
       }
 
       if (
@@ -127,15 +173,34 @@ class Coursera {
     }
   }
 
+  /**
+   * Extracts languages from a given selector
+   * @param {Object} page
+   * @param {String} selector
+   * @returns {Array} languages
+   * @description Extracts languages from a given selector
+   * @async
+   */
   async extractLanguages(page, selector) {
     // Implementation of extractLanguages function
     try {
-      const languages = await this.extractText(page, selector);
-      if (languages) {
-        return languages
+      let languages = [];
+      let langs = await this.extractText(page, selector);
+      if (langs) {
+        langs = langs
           .split(",")
-          .map((lang) => lang.trim())
+          .map((lang) => lang.trim().split(" ")[0])
           .join(", ");
+        if (langs.includes("English")) {
+          languages.push("en");
+        }
+        if (langs.includes("Français")) {
+          languages.push("fr");
+        }
+        if (langs.includes("العربية")) {
+          languages.push("ar");
+        }
+        return languages;
       } else {
         throw new Error("No languages found");
       }
@@ -145,6 +210,14 @@ class Coursera {
     }
   }
 
+  /**
+   * Extracts programme from a given selector
+   * @param {Object} page
+   * @param {String} selector
+   * @returns {Array} programme
+   * @description Extracts programme from a given selector
+   * @async
+   */
   async extractProgramme(page, xpath) {
     // Implementation of extractProgramme function
     return await page.evaluate((xpath) => {
@@ -165,6 +238,14 @@ class Coursera {
     }, xpath);
   }
 
+  /**
+   * Extracts animateur from a given selector
+   * @param {Object} page
+   * @param {String} selector
+   * @returns {Array} animateur
+   * @description Extracts animateur from a given selector
+   * @async
+   */
   async extractAnimateur(page, xpath) {
     // Implementation of extractAnimateur function
     return await page.evaluate((xpath) => {
@@ -187,23 +268,33 @@ class Coursera {
     }, xpath);
   }
 
+  /**
+   * Checks if an element exists
+   * @param {Object} page
+   * @param {String} xpath
+   * @returns {Boolean} exists
+   * @description Checks if an element exists
+   * @async
+   */
   async checkElementExistence(page, xpath) {
     // Implementation of checkElementExistence function
     return await page.$(xpath);
   }
 }
 
-(async () => {
-  const data = [];
-  const urls = [
-    "https://www.coursera.org/specializations/improve-english",
-    "https://www.coursera.org/learn/project-management-basics",
-    "https://www.coursera.org/professional-certificates/facebook-social-media-marketing",
-  ];
-  for (const url of urls) {
-    let courseraModel = new Coursera(url);
-    let course = await courseraModel.scrapeCourseData();
-    data.push(course);
-  }
-  saveDataToJSON(data);
-})();
+// (async () => {
+//   const data = [];
+//   const urls = [
+//     "https://www.coursera.org/specializations/improve-english",
+//     "https://www.coursera.org/learn/project-management-basics",
+//     "https://www.coursera.org/professional-certificates/facebook-social-media-marketing",
+//   ];
+//   for (const url of urls) {
+//     let courseraModel = new Coursera(url);
+//     let course = await courseraModel.scrapeCourseData();
+//     data.push(course);
+//   }
+//   saveDataToJSON(data);
+// })();
+
+module.exports = CourseraScraper;
