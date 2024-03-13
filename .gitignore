@@ -1,3 +1,4 @@
 /node_modules
-/*.json
-/*.rest
+*.json
+api.rest
+sandbox.js

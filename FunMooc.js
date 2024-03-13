@@ -6,7 +6,7 @@ class FunMoocScraper {
       name: "//h1[@class='subheader__title']", //* Good
       orga: "//a/meta[@property='name']", //* Good
       brief:
-        "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[1]/div/div/p", //? Get all the <p> elements
+        "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[1]/div/div/p",
       programme:
         "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[2]/section/div/ul/li/div/button",
       animateur: "//h3[@class='person-glimpse__title']",
@@ -137,7 +137,11 @@ scraper
   .scrapeCourseData(
     "https://www.fun-mooc.fr/fr/cours/orisat-teledetection-des-risques-naturels/"
   )
-  .then((data) => data);
+  .then((data) => console.log(data));
+
+scraper
+  .scrapeCourseData("https://www.fun-mooc.fr/fr/cours/medical-mycology/")
+  .then((data) => console.log(data));
 
 //	!  buttons    //section/div/ul/li/div/button
 //	!  subbuttons //section/div/ul/li/div/ul/li/div/button

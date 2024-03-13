@@ -168,7 +168,7 @@ class OpenClassroomsScraper {
         this.extractMany(page, this.openClassrooms.brief).then((brief) =>
           brief.join(" ")
         ),
-        this.extractText(page, this.openClassrooms.animateur),
+        this.extractMany(page, this.openClassrooms.animateur),
         this.extractMany(page, this.openClassrooms.programme),
       ]);
 

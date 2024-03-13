@@ -47,7 +47,7 @@ class CourseraScraper {
     selectors.programme =
       "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
     selectors.animateur =
-      "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]/div[1]/a/span";
+      "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]";
   };
   checkType(url) {
     // Implementation of checkType function
@@ -142,10 +142,20 @@ class CourseraScraper {
           "xpath///div[3]/div/div[1]/button/span"
         )
       ) {
-        await page.click("xpath///div[3]/div/div[1]/button/span");
-        animateur = await this.extractAnimateur(page, this.selectors.animateur);
+        await page.click("xpath///div[3]/div/div[1]/button/span").then(() => {
+          console.log("clicked");
+        });
       }
-
+      animateur = await this.extractAnimateur(
+        page,
+        this.selectors.animateur + "/div[1]/a/span"
+      );
+      if (animateur.length === 0) {
+        animateur = await this.extractAnimateur(
+          page,
+          this.selectors.animateur + "/div[2]/a/span"
+        );
+      }
       const [title, orga, brief, programme] = await Promise.all([
         this.extractText(page, this.selectors.name),
         this.extractText(page, this.selectors.orga),
@@ -157,7 +167,7 @@ class CourseraScraper {
         title,
         url: this.url,
         orga,
-        type: this.type,
+        // type: this.type,
         brief,
         programme,
         animateur,
