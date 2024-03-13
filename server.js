@@ -4,6 +4,7 @@ const OpenClassrooms = require("./OpenClassroom");
 const cors = require("cors");
 const FunMooc = require("./FunMooc");
 const app = express();
+const host = "0.0.0.0";
 const port = 3000;
 
 app.use(express.json());
@@ -90,7 +91,6 @@ app.post("/api/fun-mooc/scrape-course", async (req, res) => {
   }
 });
 
-
-app.listen(port, () => {
+app.listen(port, host, () => {
   console.log(`Example app listening on port ${port}`);
 });
