@@ -7,6 +7,11 @@ const port = 3000;
 
 app.use(express.json());
 app.use(cors());
+/**
+ * Scrape course data from Coursera
+ * @param {string} url - URL of the course to scrape
+ * @returns {Promise<object>} - Course data
+ */
 
 app.post("/api/coursera/scrape-course", async (req, res) => {
   try {
@@ -29,6 +34,12 @@ app.post("/api/coursera/scrape-course", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+/**
+ * Scrape course data from OpenClassrooms
+ * @param {string} url - URL of the course to scrape
+ * @returns {Promise<object>} - Course data
+ */
 
 app.post("/api/openclassrooms/scrape-course", async (req, res) => {
   try {
