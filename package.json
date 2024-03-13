@@ -16,6 +16,6 @@
     "express": "^4.18.3",
     "langdetect": "^0.2.1",
     "nodemon": "^3.1.0",
-    "puppeteer": "^22.4.0"
+    "puppeteer": "^22.4.1"
   }
 }

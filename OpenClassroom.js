@@ -16,6 +16,7 @@ class OpenClassroomsScraper {
    * @returns {Object}
    */
   constructor() {
+    this.platform = "OpenClassrooms";
     this.openClassrooms = {
       name: "//*[@id='course-header']/div[1]/div/div/div/a/h1",
       orga: "//*[@id='tab-courseMenu']/div/a/span",
@@ -174,6 +175,7 @@ class OpenClassroomsScraper {
 
       return {
         title,
+        platform: this.platform,
         url,
         orga,
         brief,
@@ -193,13 +195,3 @@ class OpenClassroomsScraper {
 }
 
 module.exports = OpenClassroomsScraper;
-
-// let scraper = new OpenClassroomsScraper();
-
-// scraper
-//   .scrapeCourseData(
-//     "https://openclassrooms.com/en/courses/6067971-gerez-les-instances-representatives-du-personnel"
-//   )
-//   .then((data) => {
-//     console.log(data);
-//   });

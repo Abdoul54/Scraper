@@ -13,13 +13,14 @@ class FunMoocScraper {
    * @description Constructor for FunMoocScraper class
    */
   constructor() {
+    this.platform = "FunMooc";
     this.funMooc = {
       name: "//h1[@class='subheader__title']",
       orga: "//a/meta[@property='name']",
       brief:
         "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[1]/div/div/p",
       programme:
-        "//div[@class='nested-item nested-item--accordion nested-item--1']",
+        '//div[@class="nested-item nested-item--accordion nested-item--0"]/ul/li/div',
       animateur: "//h3[@class='person-glimpse__title']",
       languages: "//div[@class='subheader__content']/div[2]/ul/div/li/span",
     };
@@ -194,7 +195,7 @@ class FunMoocScraper {
           const text1 = element1.textContent.trim();
           const text2 = element2.textContent.trim();
 
-          const combinedText = `${text1} - ${text2}`;
+          const combinedText = `${text1} : ${text2}`;
           texts.push(combinedText);
 
           element1 = iterator1.iterateNext();
@@ -211,6 +212,54 @@ class FunMoocScraper {
   }
 
   /**
+   * Extracts text from three xpaths and combines them
+   * @param {Object} page
+   * @returns {Array} data
+   * @description Extracts text from three xpaths and combines them
+   * @async
+   */
+  async scrapeElementContent(page) {
+    const elementHandle = await page.$$("xpath/" + this.funMooc.programme);
+    let data = [];
+
+    for (let i = 1; i <= elementHandle.length; i++) {
+      const dynamicXPath = `// div[@class="nested-item nested-item--accordion nested-item--0"]/ul/li[${i}]/div`;
+
+      const elementContent = await this.extractText(page, dynamicXPath);
+
+      data.push(elementContent);
+    }
+    return data;
+  }
+
+  /**
+   * Cleans strings
+   * @param {Array} strings
+   * @returns {Array} cleanedStrings
+   * @description Cleans strings
+   */
+  cleanStrings(strings) {
+    const cleanedStrings = strings.map((str) => {
+      // Remove leading and trailing whitespace
+      str = str.trim();
+      // Replace consecutive whitespace characters with a single space
+      str = str.replace(/\s+/g, " ");
+      // Remove leading and trailing newline characters
+      str = str.replace(/^\n+|\n+$/g, "");
+      // Replace consecutive newline characters with a single newline
+      str = str.replace(/\n+/g, "\n");
+      // Replace consecutive tab characters with a single tab
+      str = str.replace(/\t+/g, "\t");
+      // Replace consecutive space characters with a single space
+      str = str.replace(/ +/g, " ");
+
+      return str;
+    });
+
+    return cleanedStrings;
+  }
+
+  /**
    * Scrapes course data from a given URL
    * @param {String} url
    * @returns {Object}
@@ -219,7 +268,6 @@ class FunMoocScraper {
    */
   async scrapeCourseData(url) {
     let browser;
-    let languages;
     if (!(await this.checkURLExists(url))) {
       console.error("URL '" + url + "' does not exist");
       return;
@@ -232,25 +280,15 @@ class FunMoocScraper {
       const [title, orga, brief, animateur, programme, languages] =
         await Promise.all([
           this.extractText(page, this.funMooc.name),
-          this.extractAttributeFromAll(
-            page,
-            this.funMooc.orga,
-            "content"
-          ),
+          this.extractAttributeFromAll(page, this.funMooc.orga, "content"),
           this.extractMany(page, this.funMooc.brief).then((brief) =>
             brief.join("")
           ),
           this.extractMany(page, this.funMooc.animateur).then(
             (animateur) => animateur
           ),
-          this.doubleExtraction(
-            page,
-            this.funMooc.programme,
-            this.funMooc.programme + "/ul/li/div/div"
-          ).then((programme) =>
-            programme.map((item) => {
-              return item.replace(/\n\s+/g, " ").trim();
-            })
+          this.scrapeElementContent(page).then((programme) =>
+            this.cleanStrings(programme)
           ),
           this.extractText(page, this.funMooc.languages).then((data) =>
             this.languageExtractor(data)
@@ -258,6 +296,7 @@ class FunMoocScraper {
         ]);
       return {
         title,
+        platform: this.platform,
         url,
         orga,
         brief,
@@ -277,20 +316,3 @@ class FunMoocScraper {
 }
 
 module.exports = FunMoocScraper;
-
-// let scraper = new FunMoocScraper();
-
-// scraper
-//   .scrapeCourseData(
-//     "https://www.fun-mooc.fr/fr/cours/orisat-teledetection-des-risques-naturels/"
-//   )
-//   .then((data) => console.log(data));
-
-// scraper
-//   .scrapeCourseData("https://www.fun-mooc.fr/fr/cours/medical-mycology/")
-//   .then((data) => console.log(data));
-
-// //	!  buttons    //section/div/ul/li/div/button
-// //	!  subbuttons //section/div/ul/li/div/ul/li/div/button
-// // *[@id="site-content"]/div[2]/div[2]/div[1]/section/div/div[2]/div/div/a/h3
-// // https://www.fun-mooc.fr/fr/cours/medical-mycology/

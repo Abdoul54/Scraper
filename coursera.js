@@ -16,6 +16,7 @@ class CourseraScraper {
    */
   constructor(url) {
     this.url = url;
+    this.platform = "Coursera";
     this.selectors = {
       name: "//h1[@data-e2e='hero-title']",
       orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
@@ -165,6 +166,7 @@ class CourseraScraper {
 
       return {
         title,
+        platform: this.platform,
         url: this.url,
         orga,
         // type: this.type,
@@ -291,20 +293,5 @@ class CourseraScraper {
     return await page.$(xpath);
   }
 }
-
-// (async () => {
-//   const data = [];
-//   const urls = [
-//     "https://www.coursera.org/specializations/improve-english",
-//     "https://www.coursera.org/learn/project-management-basics",
-//     "https://www.coursera.org/professional-certificates/facebook-social-media-marketing",
-//   ];
-//   for (const url of urls) {
-//     let courseraModel = new Coursera(url);
-//     let course = await courseraModel.scrapeCourseData();
-//     data.push(course);
-//   }
-//   saveDataToJSON(data);
-// })();
 
 module.exports = CourseraScraper;
