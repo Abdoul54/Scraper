@@ -55,8 +55,8 @@ class CourseraScraper {
     let result = url.includes("specializations")
       ? "specialization"
       : url.includes("learn")
-      ? "module"
-      : "certificate";
+        ? "module"
+        : "certificate";
     if (result === "module") {
       this.switchToModules(this.selectors);
     }
@@ -123,7 +123,14 @@ class CourseraScraper {
       if (!(await this.checkURLExists(this.url))) {
         throw new Error("URL does not exist");
       }
-      browser = await puppeteer.launch();
+      browser = await puppeteer.launch({
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--single-process",
+          "--no-zygote",
+        ],
+      });
       const page = await browser.newPage();
       await page.goto(this.url);
 
