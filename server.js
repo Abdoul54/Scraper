@@ -8,7 +8,6 @@ const host = "0.0.0.0";
 const port = 3000;
 
 app.use(express.json());
-app.use(cors());
 
 /**
  * Scrape course data from Coursera
@@ -79,6 +78,7 @@ app.post("/api/fun-mooc/scrape-course", async (req, res) => {
 
     const funMooc = new FunMooc();
     const courseData = await funMooc.scrapeCourseData(url);
+    console.log();
 
     if (!courseData) {
       return res.status(404).json({ error: "Course data not found" });
