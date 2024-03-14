@@ -164,6 +164,30 @@ class Coursera extends Scraper {
   }
 
   /**
+   * Extract the duration from the course page
+   * @param {object} page - The Puppeteer page
+   * @returns {array} - The duration of the course
+   * @memberof Coursera
+   * @method
+   * @async
+   */
+  async extarctDuration(page) {
+    const words = ["hours", "days", "weeks", "months"];
+    const elementHandle = await page.$$(
+      "xpath///div[@class='cds-119 cds-Typography-base css-h1jogs cds-121']"
+    );
+    let data = [];
+
+    for (const element of elementHandle) {
+      const text = await page.evaluate((el) => el.textContent, element);
+      if (words.some((word) => text.includes(word))) {
+        data.push(text);
+      }
+    }
+    return [...new Set(data)];
+  }
+
+  /**
    * Scrape the course data
    * @returns {object} - The scraped course data
    * @memberof Coursera
@@ -194,7 +218,7 @@ class Coursera extends Scraper {
           super.extractText(page, this.selectors.orga),
           super.extractText(page, this.selectors.brief),
           this.extractProgramme(page, this.selectors.programme),
-          super.extractText(page, this.selectors.duration),
+          this.extarctDuration(page, this.selectors.duration),
           super
             .extractMany(page, this.selectors.animateur)
             .then((animateur) => [...new Set(animateur)]),
