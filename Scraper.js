@@ -1,5 +1,4 @@
 const puppeteer = require("puppeteer");
-const langdetect = require("langdetect");
 
 class Scraper {
   constructor(platform) {
