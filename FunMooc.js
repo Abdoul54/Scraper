@@ -268,11 +268,11 @@ class FunMoocScraper {
    */
   async scrapeCourseData(url) {
     let browser;
-    if (!(await this.checkURLExists(url))) {
-      console.error("URL '" + url + "' does not exist");
-      return;
-    }
     try {
+      if (!(await this.checkURLExists(url))) {
+        console.error("URL '" + url + "' does not exist");
+        return;
+      }
       browser = await puppeteer.launch();
       const page = await browser.newPage();
       await page.goto(url);

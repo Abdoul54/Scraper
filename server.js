@@ -1,8 +1,12 @@
 const express = require("express");
-const Coursera = require("./coursera");
-const OpenClassrooms = require("./OpenClassroom");
-const cors = require("cors");
-const FunMooc = require("./FunMooc");
+// const Coursera = require("./coursera");
+// const OpenClassrooms = require("./OpenClassroom");
+// const cors = require("cors");
+// const FunMooc = require("./FunMooc");
+
+const Coursera = require("./CourseraScraper");
+const OpenClassrooms = require("./OpenClassroomsScraper");
+const FunMooc = require("./FunMoocScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
@@ -10,84 +14,72 @@ const port = 3000;
 app.use(express.json());
 
 /**
- * Scrape course data from Coursera
- * @param {string} url - URL of the course to scrape
- * @returns {Promise<object>} - Course data
+ * Route to scrape Coursera data
+ * @param {string} url - The URL of the Coursera course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
  */
-app.post("/api/coursera/scrape-course", async (req, res) => {
+app.post("/api/scrape/coursera", async (req, res) => {
   try {
     const { url } = req.body;
-
     if (!url) {
       return res.status(400).json({ error: "URL parameter is required" });
     }
 
-    const coursera = new Coursera(url);
-    const courseData = await coursera.scrapeCourseData();
-
-    if (!courseData) {
+    const courseraScraper = new Coursera(url);
+    const data = await courseraScraper.scrape();
+    if (!data) {
       return res.status(404).json({ error: "Course data not found" });
     }
-
-    return res.json(courseData);
+    res.json(data);
   } catch (error) {
-    console.error("Error scraping course:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to scrape Coursera data" });
   }
 });
 
 /**
- * Scrape course data from OpenClassrooms
- * @param {string} url - URL of the course to scrape
- * @returns {Promise<object>} - Course data
+ * Route to scrape OpenClassrooms data
+ * @param {string} url - The URL of the OpenClassrooms course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
  */
-app.post("/api/openclassrooms/scrape-course", async (req, res) => {
+app.post("/api/scrape/openclassrooms", async (req, res) => {
   try {
     const { url } = req.body;
-
     if (!url) {
       return res.status(400).json({ error: "URL parameter is required" });
     }
-
-    const openClassrooms = new OpenClassrooms();
-    const courseData = await openClassrooms.scrapeCourseData(url);
-
-    if (!courseData) {
+    const openClassroomsScraper = new OpenClassrooms();
+    const data = await openClassroomsScraper.scrape(url);
+    if (!data) {
       return res.status(404).json({ error: "Course data not found" });
     }
-
-    return res.json(courseData);
+    res.json(data);
   } catch (error) {
-    console.error("Error scraping course:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to scrape OpenClassrooms data" });
   }
 });
 
 /**
- * Scrape course data from Fun-Mooc
- * @param {string} url - URL of the course to scrape
- * @returns {Promise<object>} - Course data
+ * Route to scrape Fun-Mooc data
+ * @param {string} url - The URL of the Fun-Mooc course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
  */
-app.post("/api/fun-mooc/scrape-course", async (req, res) => {
+app.post("/api/scrape/funmooc", async (req, res) => {
   try {
     const { url } = req.body;
-
     if (!url) {
       return res.status(400).json({ error: "URL parameter is required" });
     }
-
-    const funMooc = new FunMooc();
-    const courseData = await funMooc.scrapeCourseData(url);
-    console.log();
-
-    if (!courseData) {
+    const funMoocScraper = new FunMooc();
+    const data = await funMoocScraper.scrape(url);
+    if (!data) {
       return res.status(404).json({ error: "Course data not found" });
     }
-
-    return res.json(courseData);
+    res.json(data);
   } catch (error) {
-    console.error("Error scraping course:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to scrape Fun-Mooc data" });
   }
 });
 

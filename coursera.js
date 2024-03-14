@@ -24,12 +24,9 @@ class CourseraScraper {
       brief:
         "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
       programme: "//*[@data-e2e='sdp-course-list-link']",
-      animateur:
-        '//*[@class="cds-9 css-1gjys39 cds-11 cds-grid-item cds-56 cds-78"]/div/div[2]/div/a[@data-track-component="hero_instructor"]/span',
+      animateur: '//a[@data-track-component="hero_instructor"]/span',
       duration:
-        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]",
-      ratings:
-        "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[1]/div[1]",
+        '//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
       languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
     };
     this.type = this.checkType(url);
@@ -47,16 +44,16 @@ class CourseraScraper {
       "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
     selectors.programme =
       "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
-    selectors.animateur =
-      "//*[@id='modules']/div/div/div/div[3]/div/div[1]/div[2]/div/div[2]";
+    selectors.duration =
+      "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]";
   };
   checkType(url) {
     // Implementation of checkType function
     let result = url.includes("specializations")
       ? "specialization"
       : url.includes("learn")
-        ? "module"
-        : "certificate";
+      ? "module"
+      : "certificate";
     if (result === "module") {
       this.switchToModules(this.selectors);
     }
@@ -107,6 +104,32 @@ class CourseraScraper {
       return false;
     }
   }
+  /**
+   * Extracts multiple texts from a given xpath
+   * @param {Object} page
+   * @param {String} xpath
+   * @returns {Array} texts
+   * @description Extracts multiple texts from a given xpath
+   * @async
+   */
+  async extractMany(page, xpath) {
+    return await page.evaluate((xpath) => {
+      const iterator = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+        null
+      );
+      let element = iterator.iterateNext();
+      const texts = [];
+      while (element) {
+        texts.push(element.textContent.trim());
+        element = iterator.iterateNext();
+      }
+      return [...new Set(texts)];
+    }, xpath);
+  }
 
   /**
    * Scrapes course data from Coursera
@@ -143,33 +166,15 @@ class CourseraScraper {
         await page.click("xpath///div[2]/div/button/span/span");
         languages = await this.extractLanguages(page, this.selectors.languages);
       }
-
-      if (
-        await this.checkElementExistence(
-          page,
-          "xpath///div[3]/div/div[1]/button/span"
-        )
-      ) {
-        await page.click("xpath///div[3]/div/div[1]/button/span").then(() => {
-          console.log("clicked");
-        });
-      }
-      animateur = await this.extractAnimateur(
-        page,
-        this.selectors.animateur + "/div[1]/a/span"
-      );
-      if (animateur.length === 0) {
-        animateur = await this.extractAnimateur(
-          page,
-          this.selectors.animateur + "/div[2]/a/span"
-        );
-      }
-      const [title, orga, brief, programme] = await Promise.all([
-        this.extractText(page, this.selectors.name),
-        this.extractText(page, this.selectors.orga),
-        this.extractText(page, this.selectors.brief),
-        this.extractProgramme(page, this.selectors.programme),
-      ]);
+      const [title, orga, brief, programme, duration, animateur] =
+        await Promise.all([
+          this.extractText(page, this.selectors.name),
+          this.extractText(page, this.selectors.orga),
+          this.extractText(page, this.selectors.brief),
+          this.extractProgramme(page, this.selectors.programme),
+          this.duration(page, this.selectors.duration),
+          this.extractMany(page, this.selectors.animateur),
+        ]);
 
       return {
         title,
@@ -179,6 +184,7 @@ class CourseraScraper {
         // type: this.type,
         brief,
         programme,
+        duration,
         animateur,
         languages,
       };
@@ -300,5 +306,4 @@ class CourseraScraper {
     return await page.$(xpath);
   }
 }
-
 module.exports = CourseraScraper;

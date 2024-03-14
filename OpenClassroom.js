@@ -150,7 +150,7 @@ class OpenClassroomsScraper {
    */
   async scrapeCourseData(url) {
     let browser;
-    if (!(await this.checkURLExists(url))) {
+    if (!(this.checkURLExists(url))) {
       console.error("URL '" + url + "' does not exist");
       return;
     }
