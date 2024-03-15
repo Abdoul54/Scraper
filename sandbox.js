@@ -1,66 +1,123 @@
 const Scraper = require("./Scraper");
-const langdetect = require("langdetect");
 
 /**
- * OpenClassrooms scraper
+ * Coursera scraper
  * @extends Scraper
+ * @class
  */
-class OpenClassrooms extends Scraper {
+class Coursera extends Scraper {
   /**
-   * Create an OpenClassrooms scraper
+   * Create a Coursera scraper
    * @constructor
-   * @param {string} platform - The name of the platform
-   * @param {object} selectors - The selectors to use for scraping
+   * @param {string} url - The URL of the Coursera course
+   * @memberof Coursera
+   * @method
    */
-  constructor() {
-    super("OpenClassrooms");
+  constructor(url) {
+    super("Coursera");
+    this.url = url;
     this.selectors = {
-      name: "//*[@id='course-header']/div[1]/div/div/div/a/h1",
-      orga: "//*[@id='tab-courseMenu']/div/a/span",
+      name: "//h1[@data-e2e='hero-title']",
+      orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
+      //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
       brief:
-        "//*[@id='mainContent']/article/div[3]/div/div/div/div[2]/div/section/div/div[1]/p",
+        "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
+      programme: "//*[@data-e2e='sdp-course-list-link']",
+      animateur: '//a[@data-track-component="hero_instructor"]/span',
+      progDesc:
+        "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/div",
       duration:
-        "//*[@id='course-header']/div[2]/div/div/div/div/div[1]/ul/li[1]/span",
-        
-      programme: "//div[@class='course-part-summary__title']/h3",
-      animateur: "//div[@itemprop='name']",
+        '//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
+      languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
     };
-    this.type = "course";
+    this.type = this.checkType(url);
   }
 
+  /**
+   * Switch the selectors to the modules page
+   * @param {object} selectors - The selectors to switch
+   * @memberof Coursera
+   * @method
+   * @override
+   */
+  switchToModules = (selectors) => {
+    selectors.orga = selectors.orga.replace("courses", "modules");
+    selectors.brief =
+      "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
+    selectors.programme =
+      "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
+    selectors.progDesc =
+      "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/p";
+    selectors.duration =
+      "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]";
+  };
+
+  /**
+   * Check the type of the URL
+   * @param {string} url - The URL of the Coursera course
+   * @returns {string} - The type of the URL
+   * @memberof Coursera
+   * @method
+   */
   checkType(url) {
-    if (url.includes("courses")) {
-      this.type = "course";
-    } else if (url.includes("paths")) {
-      this.type = "path";
-      this.switchSelectors();
+    let result = url.includes("specializations")
+      ? "specialization"
+      : url.includes("learn")
+      ? "module"
+      : "certificate";
+    if (result === "module") {
+      this.switchToModules(this.selectors);
+    }
+    return result;
+  }
+
+  /**
+   * Extract the languages from the course page
+   * @param {object} page - The Puppeteer page
+   * @param {string} selector - The selector for the languages
+   * @returns {array} - The languages of the course
+   * @memberof Coursera
+   * @method
+   * @async
+   */
+  async extractLanguages(page, selector) {
+    try {
+      let languages = [];
+      let langs = await this.extractText(page, selector);
+      if (langs) {
+        langs = langs
+          .split(",")
+          .map((lang) => lang.trim().split(" ")[0])
+          .join(", ");
+        if (langs.includes("English")) {
+          languages.push("en");
+        }
+        if (langs.includes("Français")) {
+          languages.push("fr");
+        }
+        if (langs.includes("العربية")) {
+          languages.push("ar");
+        }
+        return languages;
+      } else {
+        throw new Error("No languages found");
+      }
+    } catch (error) {
+      console.error("Error extracting languages:", error);
+      throw error;
     }
   }
 
-  switchSelectors() {
-    this.selectors = {
-      name: '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/h1',
-      orga: "",
-      brief: '//*[@id="path_details_description"]/div/div/p',
-      duration:
-        '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/div/div[1]/div[2]/div/div/div/span/p',
-      programme: '//*[@id="path_details_description"]/div/div/ol', //! all the li tags
-      animateur:
-        '//*[@id="path_details_description"]/div/div/figure[2]/figcaption', //! Needs to be cleaned
-    };
-  }
   /**
-   * Scrape the course data
-   * @param {string} url - The URL of the OpenClassrooms course
-   * @returns {object} - The scraped course data
-   * @throws {object} - The error message
+   * Extract the programme from the course page
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath selector for the programme
+   * @returns {array} - The programme of the course
+   * @memberof Coursera
    * @method
-   * @memberof OpenClassrooms
+   * @async
    */
-  detectLanguage(text) {
-    return langdetect.detect(text);
-  }
-  async extractUntilStrongTag(page, xpath) {
+  async extractProgramme(page, xpath) {
     return await page.evaluate((xpath) => {
       const iterator = document.evaluate(
         xpath,
@@ -73,143 +130,142 @@ class OpenClassrooms extends Scraper {
       const texts = [];
       while (element) {
         texts.push(element.textContent.trim());
-        if (element.tagName.toLowerCase() === "h3") {
-          break; // Exit the loop if a <strong> tag is found
-        }
         element = iterator.iterateNext();
       }
       return texts;
     }, xpath);
   }
-  async extractPathDetailsDescription(page) {
-    var attempts = 0;
-    let texts = [];
-    for (let i = 1; i < 10; i++) {
-      if (attempts > 3) {
-        break;
-      }
-      const selector = `#path_details_description > div > div > p:nth-child(${i})`;
-      const text = await page.evaluate((selector) => {
-        const paragraphs = document.querySelectorAll(selector);
-        return Array.from(paragraphs).map((paragraph) =>
-          paragraph.textContent.trim()
-        );
-      }, selector);
 
-      if (text.length === 0) {
-        attempts++;
+  /**
+   * Extract the animateur from the course page
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath selector for the animateur
+   * @returns {array} - The animateur of the course
+   * @memberof Coursera
+   * @method
+   * @async
+   */
+  async extractAnimateur(page, xpath) {
+    // Implementation of extractAnimateur function
+    return await page.evaluate((xpath) => {
+      const iterator = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+        null
+      );
+      let element = iterator.iterateNext();
+      const texts = [];
+      while (element) {
+        if (!texts.includes(element.textContent.trim())) {
+          texts.push(element.textContent.trim());
+        }
+        element = iterator.iterateNext();
       }
-      if (text.length > 0) {
-        texts.push(...text);
+      return [...new Set(texts)];
+    }, xpath);
+  }
+
+  /**
+   * Extract the duration from the course page
+   * @param {object} page - The Puppeteer page
+   * @returns {array} - The duration of the course
+   * @memberof Coursera
+   * @method
+   * @async
+   */
+  async extarctDuration(page) {
+    const words = ["hours", "days", "weeks", "months"];
+    const elementHandle = await page.$$(
+      "xpath///div[@class='cds-119 cds-Typography-base css-h1jogs cds-121']"
+    );
+    let data = [];
+
+    for (const element of elementHandle) {
+      const text = await page.evaluate((el) => el.textContent, element);
+      if (words.some((word) => text.includes(word))) {
+        data.push(text);
       }
     }
-    return texts.join("\n");
+    return [...new Set(data)];
   }
 
   /**
    * Scrape the course data
-   * @param {string} url - The URL of the OpenClassrooms course
    * @returns {object} - The scraped course data
-   * @throws {object} - The error message
-   * @override
-   * @async
+   * @memberof Coursera
    * @method
-   * @memberof OpenClassrooms
+   * @async
+   * @override
    */
-  async scrape(url) {
+  async scrape() {
     try {
-      let brief;
-      let programme;
-      if (!this.checkURLExists(url)) {
-        console.error("URL '" + url + "' does not exist");
-        return;
+      let languages;
+      if (!(await this.checkURLExists(this.url))) {
+        throw new Error("URL does not exist");
       }
-      var { browser, page } = await super.launchBrowser(url);
-      this.checkType(url);
-      if (this.type === "path") {
-        brief = await this.extractPathDetailsDescription(page);
-        programme = await super
-          .extractMany(page, this.selectors.programme)
-          .then((programme) => programme[0].trim().split("\n"));
-      } else {
-        brief = await super
-          .extractMany(page, this.selectors.brief)
-          .then((brief) => brief.join(" "));
-        programme = await super.extractMany(page, this.selectors.programme);
-      }
-
-      console.log({
-        selectors: this.selectors,
-        type: this.type,
-      });
-      const [title, duration, animateur] = await Promise.all([
-        super.extractText(page, this.selectors.name),
-        super.extractText(page, this.selectors.duration),
-        super.extractMany(page, this.selectors.animateur),
-      ]);
-
-      return {
-        title,
-        platform: this.platform,
-        url,
-        type: this.type,
-        brief,
-        programme,
-        duration,
-        animateur,
-        language: [this.detectLanguage(brief)[0].lang],
-      };
+      var { browser, page } = await super.launchBrowser(this.url);
+      console.log(this.type);
+      const programme = await this.extractParallel(
+        page,
+        this.selectors.programme,
+        this.selectors.progDesc
+      );
+      console.log(programme);
     } catch (error) {
       console.error("Error scraping course data:", error);
       return null;
     } finally {
       if (browser) {
-        await super.closeBrowser(browser);
+        super.closeBrowser(browser);
       }
     }
   }
+  async extractParallel(page, xpath1, xpath2) {
+    if (this.type === "specialization") {
+      var elementHandle2 = await page.$$(
+        "xpath/" + xpath2 + "/div/div/div/div/p"
+      );
+    } else if (this.type === "certificate") {
+      var elementHandle2 = await page.$$(
+        "xpath/" + xpath2 + "/ul/li/div/div/div/p/span/span"
+      );
+    } else {
+      var elementHandle2 = await page.$$("xpath/" + xpath2);
+    }
+    const elementHandle = await page.$$("xpath/" + xpath1);
+    let data = [];
+    for (let i = 0; i < elementHandle.length; i++) {
+      const text1 = await page.evaluate(
+        (el) => el.textContent,
+        elementHandle[i]
+      );
+
+      const text2 = await page
+        .evaluate((el) => el.textContent, elementHandle2[i])
+        .then((text2) => text2.trim());
+      if (!text2) {
+        data.push(text1);
+      }
+      data.push(text1 + ": " + text2);
+    }
+    return data;
+  }
 }
-let scraper = new OpenClassrooms();
 
-scraper
-  .scrape("https://openclassrooms.com/fr/paths/902-testeur-logiciel")
-  .then((data) => {
-    console.log(data);
-  });
+let scraper = new Coursera(
+  "https://www.coursera.org/specializations/become-a-journalist"
+);
 
-scraper
-  .scrape(
-    "https://openclassrooms.com/fr/courses/8204091-utilisez-chatgpt-pour-ameliorer-votre-productivite"
-  )
-  .then((data) => {
-    console.log(data);
-  });
+scraper.scrape();
 
-// "https://openclassrooms.com/fr/courses/4544616-adoptez-les-microservices"
-//? path
-// {name:'//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/h1',
-// orga: "",
-// brief: '//*[@id="path_details_description"]/div/div/p', //! all the p tags
-// duration: '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/div/div[1]/div[2]/div/div/div/span/p',  //! Needs to be cleaned
+// "https://www.coursera.org/learn/financial-markets-global"
+//*[@id="cds-react-aria-27-accordion-panel"]/div/div/p/text()
+//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3
+//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/p
 
-// programme: '//*[@id="path_details_description"]/div/div/ol', //! all the li tags
-// animateur:'//*[@id="path_details_description"]/div/div/figure[2]/figcaption' //! Needs to be cleaned
-// }
-//? course
+//*[@data-e2e='sdp-course-list-link']
+//*[@class="cds-AccordionRoot-container cds-AccordionRoot-silent"]/div[2]/div/div/div/div/div/div       /div/div/div/div/p
 
-//! Name
-//*[@id="course-hero"]/div/div/div[1]/div[1]/h1
-//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/h1
-//! Orga
-//*[@id="tab-courseMenu"]/div/a/span
-
-//! Brief
-//*[@id="r-8217820"]
-//! duration
-//*[@id="course-header"]/div[2]/div/div/div/div/div[1]/ul/li[1]/span
-
-//! Programme
-//div[@class='course-part-summary__title']/h3
-
-//! Animateur
-//div[@itemprop='name']
+//*[@class="cds-AccordionRoot-container cds-AccordionRoot-silent"]/div[2]/div/div/div/div/div/div       /ul/li/div/div/div/p/span/span

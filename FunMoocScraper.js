@@ -23,12 +23,15 @@ class FunMooc extends Scraper {
         "//*[@id='site-content']/div[2]/div[1]/div/div[1]/div[1]/div/div/p",
       programme:
         '//div[@class="nested-item nested-item--accordion nested-item--0"]/ul/li/div',
-      duration: "//div[@class='subheader__content']/div[2]/ul/li[1]/span",
-      animateur: "//h3[@class='person-glimpse__title']",
+      altProgramme:
+        '//section[@class="course-detail__row course-detail__plan"]',
+      duration: "//div[@class='subheader__content']/div[2]/ul/li[2]/span",
+      animateur: "//section/div/div/div/div/a/h3",
       languages: "//div[@class='subheader__content']/div[2]/ul/div/li/span",
     };
   }
-
+  // *[@id="site-content"]/div[2]/div[1]/div/div[1]/div[2]/section
+  //section[@class="course-detail__row course-detail__plan"]+ /div or /ul/li,
   /**
    * Extract the languages from the data
    * @param {string} data - The data to extract the languages from
@@ -105,6 +108,31 @@ class FunMooc extends Scraper {
     return cleanedStrings;
   }
 
+  async extractLimited(page, xpath, limit) {
+    return await page.evaluate(
+      (xpath, limit) => {
+        const iterator = document.evaluate(
+          xpath,
+          document,
+          null,
+          XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+          null
+        );
+        let element = iterator.iterateNext();
+        const texts = [];
+        let count = 0;
+        while (element && (limit === undefined || count < limit)) {
+          texts.push(element.textContent.trim());
+          element = iterator.iterateNext();
+          count++;
+        }
+        return texts;
+      },
+      xpath,
+      limit
+    );
+  }
+
   /**
    * Scrape the course data
    * @param {string} url - The URL of the Fun-Mooc course
@@ -130,14 +158,25 @@ class FunMooc extends Scraper {
           super
             .extractMany(page, this.selectors.brief)
             .then((brief) => brief.join("")),
-          super
-            .extractMany(page, this.selectors.animateur)
-            .then((animateur) => animateur),
+          this.extractLimited(page, this.selectors.animateur, 3).then(
+            (animateur) => animateur
+          ),
           super
             .extractText(page, this.selectors.duration)
             .then((duration) => duration.split(": ")[1]),
           this.scrapeElementContent(page).then((programme) =>
-            this.cleanStrings(programme)
+            programme.length !== 0
+              ? this.cleanStrings(programme)
+              : super
+                  .extractMany(page, this.selectors.altProgramme + "/ul/li")
+                  .then((programme) =>
+                    programme.length !== 0
+                      ? this.cleanStrings(programme)
+                      : super.extractMany(
+                          page,
+                          this.selectors.altProgramme + "/div"
+                        )
+                  )
           ),
           super
             .extractText(page, this.selectors.languages)
@@ -164,5 +203,4 @@ class FunMooc extends Scraper {
     }
   }
 }
-
 module.exports = FunMooc;
