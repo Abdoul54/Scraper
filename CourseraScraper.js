@@ -22,7 +22,10 @@ class Coursera extends Scraper {
       //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
       brief:
         "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
-      programme: "//*[@data-e2e='sdp-course-list-link']",
+      moduleTitles:
+        "//div[@data-testid='accordion-item']/div/div/div/div[1]/div/h3/a",
+      moduleDescs:
+        "/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div",
       animateur: '//a[@data-track-component="hero_instructor"]/span',
       duration:
         '//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
@@ -46,6 +49,9 @@ class Coursera extends Scraper {
       "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
     selectors.duration =
       "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]";
+    selectors.moduleTitles =
+      "//div[@data-testid='accordion-item']/div/div/div/div/button/span/span/span/h3";
+    selectors.moduleDescs = "/div/div/div/div/div/div/div/div/div/p";
   };
 
   /**
@@ -80,56 +86,24 @@ class Coursera extends Scraper {
     try {
       let languages = [];
       let langs = await this.extractText(page, selector);
-      if (langs) {
-        langs = langs
-          .split(",")
-          .map((lang) => lang.trim().split(" ")[0])
-          .join(", ");
-        if (langs.includes("English")) {
-          languages.push("en");
-        }
-        if (langs.includes("Français")) {
-          languages.push("fr");
-        }
-        if (langs.includes("العربية")) {
-          languages.push("ar");
-        }
-        return languages;
-      } else {
-        throw new Error("No languages found");
+      langs = langs
+        .split(",")
+        .map((lang) => lang.trim().split(" ")[0])
+        .join(", ");
+      if (langs.includes("English")) {
+        languages.push("english");
       }
+      if (langs.includes("Français")) {
+        languages.push("french");
+      }
+      if (langs.includes("العربية")) {
+        languages.push("arabic");
+      }
+      return languages;
     } catch (error) {
       console.error("Error extracting languages:", error);
       throw error;
     }
-  }
-
-  /**
-   * Extract the programme from the course page
-   * @param {object} page - The Puppeteer page
-   * @param {string} xpath - The XPath selector for the programme
-   * @returns {array} - The programme of the course
-   * @memberof Coursera
-   * @method
-   * @async
-   */
-  async extractProgramme(page, xpath) {
-    return await page.evaluate((xpath) => {
-      const iterator = document.evaluate(
-        xpath,
-        document,
-        null,
-        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-        null
-      );
-      let element = iterator.iterateNext();
-      const texts = [];
-      while (element) {
-        texts.push(element.textContent.trim());
-        element = iterator.iterateNext();
-      }
-      return texts;
-    }, xpath);
   }
 
   /**
@@ -188,6 +162,47 @@ class Coursera extends Scraper {
   }
 
   /**
+   * Extract the programme from the course page
+   * @param {object} page - The Puppeteer page
+   * @returns {array} - The programme of the course
+   * @memberof Coursera
+   * @method
+   * @async
+   */
+  async extractProgramme(page) {
+    const programme = [];
+    const elementHandle = await page.$$("xpath/" + this.selectors.moduleTitles);
+    let counter = 1;
+    for (const element of elementHandle) {
+      const moduleTitle = await page.evaluate((el) => el.textContent, element);
+      let moduleDesc = await super
+        .extractMany(
+          page,
+          `//div[@data-testid="accordion-item"][${counter}]${this.selectors.moduleDescs}`
+        )
+        .then((moduleDesc) =>
+          moduleDesc.join(". ").replace(/\.\./g, ".").replace(/\n/g, "")
+        );
+
+      if (moduleDesc.length === 0) {
+        moduleDesc = await super
+          .extractMany(
+            page,
+            `//div[@data-testid="accordion-item"][${counter}]/div/div/div/div[2]/div/div/div/div/div/div[1]/ul/li`
+          )
+          .then((moduleDesc) =>
+            moduleDesc.join(". ").replace(/\.\./g, ".").replace(/\n/g, "")
+          );
+      }
+      var module = moduleTitle.trim().concat(" :   " + moduleDesc);
+      programme.push(module);
+
+      counter++;
+    }
+    return programme;
+  }
+
+  /**
    * Scrape the course data
    * @returns {object} - The scraped course data
    * @memberof Coursera
@@ -216,12 +231,14 @@ class Coursera extends Scraper {
         await Promise.all([
           super.extractText(page, this.selectors.name),
           super.extractText(page, this.selectors.orga),
-          super.extractText(page, this.selectors.brief),
-          this.extractProgramme(page, this.selectors.programme),
+          super
+            .extractMany(page, this.selectors.brief)
+            .then((brief) => brief.map((el) => el.trim()).join(" ")),
+          this.extractProgramme(page),
           this.extarctDuration(page, this.selectors.duration),
           super
             .extractMany(page, this.selectors.animateur)
-            .then((animateur) => [...new Set(animateur)]),
+            .then((animateur) => [...new Set(animateur)].slice(0, 3)),
         ]);
 
       return {
