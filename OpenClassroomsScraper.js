@@ -166,15 +166,6 @@ class OpenClassrooms extends Scraper {
     }, xpath);
   }
 
-  /**
-   * Extract the sibling before the lists
-   * @param {object} page - The Puppeteer page
-   * @param {string} xpath - The XPath of the element to extract
-   * @returns {string} - The extracted sibling
-   * @method
-   * @memberof OpenClassrooms
-   * @async
-   */
   async extractSiblingBeforeLists(page, xpath) {
     return await page.evaluate((xpath) => {
       const ulElements = document.evaluate(
@@ -198,7 +189,7 @@ class OpenClassrooms extends Scraper {
           }
         }
       }
-      return siblings;
+      return null;
     }, xpath);
   }
 
@@ -212,19 +203,27 @@ class OpenClassrooms extends Scraper {
    */
   async extractProgramme(page) {
     try {
-      let programme = await super
-        .extractMany(page, this.selectors.programme)
-        .then((programme) =>
-          programme && programme[0]
-            ? programme[0].trim().split("\n")
-            : super
-                .extractMany(page, this.selectors.altProgramme2)
-                .then((programme) => programme[0].trim().split("\n"))
-        );
+      let programme = await this.extractSiblingBeforeLists(
+        page,
+        this.selectors.altProgramme1
+      )
+        .then((programme) => programme.split("\n"))
+        .catch(() => {
+          null;
+        });
       if (!programme) {
-        programme = await this.extractSiblingBeforeLists.then((programme) =>
-          programme.split("\n")
-        );
+        programme = await super
+          .extractMany(page, this.selectors.programme)
+          .then((programme) =>
+            programme && programme[0]
+              ? programme[0].trim().split("\n")
+              : super
+                  .extractMany(page, this.selectors.altProgramme2)
+                  .then((programme) => programme[0].trim().split("\n"))
+                  .catch((error) => {
+                    console.error("Error extracting programme:", error);
+                  })
+          );
       }
       return programme;
     } catch (error) {
@@ -259,10 +258,18 @@ class OpenClassrooms extends Scraper {
       this.switchSelectors(this.type);
       if (this.type === "path") {
         [brief, programme, title] = await Promise.all([
-          this.extractPathDetailsDescription(page),
+          this.extractPathDetailsDescription(page).then((brief) =>
+            brief
+              ? brief
+              : this.extractMany(
+                  page,
+                  '//*[@id="path_details_description"]/div/div/p'
+                ).then((brief) => brief.slice(0, 3).join(" ").trim())
+          ),
           this.extractProgramme(page),
           this.extractTextPostMutation(page, this.selectors.name),
         ]);
+        console.log(programme);
         animateur = [];
       } else {
         [brief, programme, title, animateur] = await Promise.all([

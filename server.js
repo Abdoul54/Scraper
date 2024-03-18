@@ -1,9 +1,4 @@
 const express = require("express");
-// const Coursera = require("./coursera");
-// const OpenClassrooms = require("./OpenClassroom");
-// const cors = require("cors");
-// const FunMooc = require("./FunMooc");
-
 const Coursera = require("./CourseraScraper");
 const OpenClassrooms = require("./OpenClassroomsScraper");
 const FunMooc = require("./FunMoocScraper");
