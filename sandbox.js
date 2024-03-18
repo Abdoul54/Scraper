@@ -1,425 +1,320 @@
 const Scraper = require("./Scraper");
+const langdetect = require("langdetect");
 
 /**
- * Coursera scraper
+ * OpenClassrooms scraper
  * @extends Scraper
- * @class
  */
-class Coursera extends Scraper {
+class OpenClassrooms extends Scraper {
   /**
-   * Create a Coursera scraper
+   * Create an OpenClassrooms scraper
    * @constructor
-   * @param {string} url - The URL of the Coursera course
-   * @memberof Coursera
-   * @method
+   * @param {string} platform - The name of the platform
+   * @param {object} selectors - The selectors to use for scraping
    */
-  constructor(url) {
-    super("Coursera");
-    this.url = url;
+  constructor() {
+    super("OpenClassrooms");
     this.selectors = {
-      name: "//h1[@data-e2e='hero-title']",
-      orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
-      //*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
+      name: "//*[@id='course-header']/div[1]/div/div/div/a/h1",
+      orga: "//*[@id='tab-courseMenu']/div/a/span",
       brief:
-        "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
-      moduleTitles:
-        "//div[@data-testid='accordion-item']/div/div/div/div[1]/div/h3/a",
-      moduleDescs:
-        "/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div",
-      animateur: '//a[@data-track-component="hero_instructor"]/span',
-      progDesc:
-        "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/div",
+        "//*[@id='mainContent']/article/div[3]/div/div/div/div[2]/div/section/div/div[1]/p",
       duration:
-        '//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
-      languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
+        "//*[@id='course-header']/div[2]/div/div/div/div/div[1]/ul/li[1]/span",
+
+      programme: "//div[@class='course-part-summary__title']/h3",
+      animateur: "//div[@itemprop='name']",
     };
-    this.type = this.checkType(url);
+    this.type = "course";
   }
 
   /**
-   * Switch the selectors to the modules page
-   * @param {object} selectors - The selectors to switch
-   * @memberof Coursera
+   * Check the type of course
+   * @param {string} url - The URL of the OpenClassrooms course
    * @method
-   * @override
-   */
-  switchToModules = (selectors) => {
-    selectors.orga = selectors.orga.replace("courses", "modules");
-    selectors.brief =
-      "//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
-    selectors.programme =
-      "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
-    selectors.progDesc =
-      "//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/p";
-    selectors.duration =
-      "//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]";
-    selectors.moduleTitles =
-      "//div[@data-testid='accordion-item']/div/div/div/div/button/span/span/span/h3";
-    selectors.moduleDescs = "/div/div/div/div/div/div/div/div/div/p";
-  };
-
-  /**
-   * Check the type of the URL
-   * @param {string} url - The URL of the Coursera course
-   * @returns {string} - The type of the URL
-   * @memberof Coursera
-   * @method
+   * @memberof OpenClassrooms
    */
   checkType(url) {
-    let result = url.includes("specializations")
-      ? "specialization"
-      : url.includes("learn")
-      ? "module"
-      : "certificate";
-    if (result === "module") {
-      this.switchToModules(this.selectors);
-    }
-    return result;
-  }
-
-  /**
-   * Extract the languages from the course page
-   * @param {object} page - The Puppeteer page
-   * @param {string} selector - The selector for the languages
-   * @returns {array} - The languages of the course
-   * @memberof Coursera
-   * @method
-   * @async
-   */
-  async extractLanguages(page, selector) {
-    try {
-      let languages = [];
-      let langs = await this.extractText(page, selector);
-      if (langs) {
-        langs = langs
-          .split(",")
-          .map((lang) => lang.trim().split(" ")[0])
-          .join(", ");
-        if (langs.includes("English")) {
-          languages.push("en");
-        }
-        if (langs.includes("Français")) {
-          languages.push("fr");
-        }
-        if (langs.includes("العربية")) {
-          languages.push("ar");
-        }
-        return languages;
-      } else {
-        throw new Error("No languages found");
-      }
-    } catch (error) {
-      console.error("Error extracting languages:", error);
-      throw error;
+    if (url.includes("courses")) {
+      this.type = "course";
+    } else if (url.includes("paths")) {
+      this.type = "path";
+      this.switchSelectors();
     }
   }
 
   /**
-   * Extract the programme from the course page
-   * @param {object} page - The Puppeteer page
-   * @param {string} xpath - The XPath selector for the programme
-   * @returns {array} - The programme of the course
-   * @memberof Coursera
+   * Switch the selectors based on the type of course
+   * @param {string} type - The type of course
    * @method
+   * @memberof OpenClassrooms
    * @async
    */
-  async extractProgramme(page, xpath) {
-    return await page.evaluate((xpath) => {
-      const iterator = document.evaluate(
-        xpath,
-        document,
-        null,
-        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-        null
-      );
-      let element = iterator.iterateNext();
-      const texts = [];
-      while (element) {
-        texts.push(element.textContent.trim());
-        element = iterator.iterateNext();
-      }
-      return texts;
-    }, xpath);
-  }
-
-  /**
-   * Extract the animateur from the course page
-   * @param {object} page - The Puppeteer page
-   * @param {string} xpath - The XPath selector for the animateur
-   * @returns {array} - The animateur of the course
-   * @memberof Coursera
-   * @method
-   * @async
-   */
-  async extractAnimateur(page, xpath) {
-    // Implementation of extractAnimateur function
-    return await page.evaluate((xpath) => {
-      const iterator = document.evaluate(
-        xpath,
-        document,
-        null,
-        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-        null
-      );
-      let element = iterator.iterateNext();
-      const texts = [];
-      while (element) {
-        if (!texts.includes(element.textContent.trim())) {
-          texts.push(element.textContent.trim());
-        }
-        element = iterator.iterateNext();
-      }
-      return [...new Set(texts)];
-    }, xpath);
-  }
-
-  /**
-   * Extract the duration from the course page
-   * @param {object} page - The Puppeteer page
-   * @returns {array} - The duration of the course
-   * @memberof Coursera
-   * @method
-   * @async
-   */
-  async extarctDuration(page) {
-    const words = ["hours", "days", "weeks", "months"];
-    const elementHandle = await page.$$(
-      "xpath///div[@class='cds-119 cds-Typography-base css-h1jogs cds-121']"
-    );
-    let data = [];
-
-    for (const element of elementHandle) {
-      const text = await page.evaluate((el) => el.textContent, element);
-      if (words.some((word) => text.includes(word))) {
-        data.push(text);
-      }
+  switchSelectors(type) {
+    if (type === "path") {
+      this.selectors = {
+        name: '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/h1',
+        orga: "",
+        brief: '//*[@id="path_details_description"]/div/div/p',
+        duration:
+          '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/div/div[1]/div[2]/div/div/div/span/p',
+        programme: '//*[@id="path_details_description"]/div/div/ol',
+        altProgramme1: '//*[@id="path_details_description"]/div/div/ul',
+        altProgramme2: '//*[@id="path_details_description"]/div/div/ul[1]',
+        animateur:
+          '//*[@id="path_details_description"]/div/div/figure[2]/figcaption', //! Needs to be cleaned
+      };
+    } else if (type === "course") {
+      this.selectors = {
+        name: "//*[@id='course-header']/div[1]/div/div/div/a/h1",
+        orga: "//*[@id='tab-courseMenu']/div/a/span",
+        brief:
+          "//*[@id='mainContent']/article/div[3]/div/div/div/div[2]/div/section/div/div[1]/p",
+        duration:
+          "//*[@id='course-header']/div[2]/div/div/div/div/div[1]/ul/li[1]/span",
+        programme: "//div[@class='course-part-summary__title']/h3",
+        animateur: "//div[@itemprop='name']",
+      };
     }
-    return [...new Set(data)];
+  }
+  /**
+   * Scrape the course data
+   * @param {string} url - The URL of the OpenClassrooms course
+   * @returns {object} - The scraped course data
+   * @throws {object} - The error message
+   * @method
+   * @memberof OpenClassrooms
+   */
+  detectLanguage(text) {
+    if (langdetect.detect(text)[0].lang === "fr") {
+      return ["french"];
+    }
+    if (langdetect.detect(text)[0].lang === "en") {
+      return ["english"];
+    }
+    return [];
   }
 
-  async extractManyOuterHtml(page, xpath) {
-    const elementsWithTags = await page.evaluate((xpath) => {
-      // Define your XPath expression here
-      const xpathExpression = xpath;
-      const result = document.evaluate(
-        xpathExpression,
-        document,
-        null,
-        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-        null
-      );
-
-      const elements = [];
-      let element = result.iterateNext();
-
-      while (element) {
-        elements.push(element.outerHTML);
-        element = result.iterateNext();
+  /**
+   * Extract the description of a path
+   * @param {object} page - The Puppeteer page
+   * @returns {string} - The extracted description
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */
+  async extractPathDetailsDescription(page) {
+    var attempts = 0;
+    let texts = [];
+    for (let i = 1; i < 10; i++) {
+      if (attempts > 3) {
+        break;
       }
-
-      return elements;
-    }, xpath); // pass the xpath argument here
-
-    return elementsWithTags;
-  }
-  async extractProgramme(page) {
-    const programme = [];
-    const elementHandle = await page.$$("xpath/" + this.selectors.moduleTitles);
-    let counter = 1;
-    for (const element of elementHandle) {
-      const moduleTitle = await page.evaluate((el) => el.textContent, element);
-      let moduleDesc = await super
-        .extractMany(
-          page,
-          `//div[@data-testid="accordion-item"][${counter}]${this.selectors.moduleDescs}`
-        )
-        .then((moduleDesc) =>
-          moduleDesc.join(". ").replace(/\.\./g, ".").replace(/\n/g, "")
+      const selector = `#path_details_description > div > div > p:nth-child(${i})`;
+      const text = await page.evaluate((selector) => {
+        const paragraphs = document.querySelectorAll(selector);
+        return Array.from(paragraphs).map((paragraph) =>
+          paragraph.textContent.trim()
         );
+      }, selector);
 
-      if (moduleDesc.length === 0) {
-        moduleDesc = await super
-          .extractMany(
-            page,
-            `//div[@data-testid="accordion-item"][${counter}]/div/div/div/div[2]/div/div/div/div/div/div[1]/ul/li`
-          )
-          .then((moduleDesc) =>
-            moduleDesc.join(". ").replace(/\.\./g, ".").replace(/\n/g, "")
-          );
+      if (text.length === 0) {
+        attempts++;
       }
-      var module = moduleTitle.trim().concat(" :   " + moduleDesc);
-      programme.push(module);
-
-      counter++;
+      if (text.length > 0) {
+        texts.push(...text);
+      }
     }
-    return programme;
+    if (texts[texts.length - 1].endsWith(":")) {
+      texts.pop();
+    }
+    return texts.join("\n");
+  }
+
+  /**
+   * Extract text content after a mutation
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath of the element to extract
+   * @returns {string} - The extracted text content
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */
+  async extractTextPostMutation(page, xpath) {
+    return await page.evaluate(async (xpath) => {
+      const waitForElement = (xpath) => {
+        return new Promise((resolve) => {
+          const observer = new MutationObserver((mutations) => {
+            const element = document.evaluate(
+              xpath,
+              document,
+              null,
+              XPathResult.FIRST_ORDERED_NODE_TYPE,
+              null
+            ).singleNodeValue;
+            if (element) {
+              observer.disconnect();
+              resolve(element);
+            }
+          });
+          observer.observe(document, { childList: true, subtree: true });
+        });
+      };
+
+      const element = await waitForElement(xpath);
+      return element ? element.textContent.trim() : null;
+    }, xpath);
+  }
+
+  async extractSiblingBeforeLists(page, xpath) {
+    return await page.evaluate((xpath) => {
+      const ulElements = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null
+      );
+      const siblings = [];
+      for (let i = 0; i < ulElements.snapshotLength; i++) {
+        const ulElement = ulElements.snapshotItem(i);
+        if (ulElement) {
+          const precedingSibling = ulElement.previousElementSibling;
+          siblings.push(
+            precedingSibling.tagName + ": " + precedingSibling.textContent
+          );
+
+          if (precedingSibling.tagName === "H2") {
+            return ulElement.textContent.trim();
+          }
+        }
+      }
+      return siblings;
+    }, xpath);
+  }
+
+  /**
+   * Extract the programme of a path
+   * @param {object} page - The Puppeteer page
+   * @returns {string} - The extracted programme
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */
+  async extractProgramme(page) {
+    try {
+      let programme = await super
+        .extractMany(page, this.selectors.programme)
+        .then((programme) =>
+          programme && programme[0]
+            ? programme[0].trim().split("\n")
+            : super
+                .extractMany(page, this.selectors.altProgramme2)
+                .then((programme) => programme[0].trim().split("\n"))
+        );
+      if (!programme) {
+        programme = await this.extractSiblingBeforeLists.then((programme) =>
+          programme.split("\n")
+        );
+      }
+      return programme;
+    } catch (error) {
+      console.error("Error extracting programme:", error);
+      return null;
+    }
   }
 
   /**
    * Scrape the course data
+   * @param {string} url - The URL of the OpenClassrooms course
    * @returns {object} - The scraped course data
-   * @memberof Coursera
-   * @method
-   * @async
+   * @throws {object} - The error message
    * @override
+   * @async
+   * @method
+   * @memberof OpenClassrooms
    */
-  async scrape() {
+  async scrape(url) {
     try {
-      let languages;
-      if (!(await this.checkURLExists(this.url))) {
-        throw new Error("URL does not exist");
+      let brief;
+      let programme;
+      let title;
+      let animateur;
+      const orga = "OpenClassrooms";
+      if (!this.checkURLExists(url)) {
+        console.error("URL '" + url + "' does not exist");
+        return;
       }
-      var { browser, page } = await super.launchBrowser(this.url);
-      console.log(this.type);
+      var { browser, page } = await super.launchBrowser(url);
+      this.checkType(url);
+      this.switchSelectors(this.type);
+      if (this.type === "path") {
+        [brief, programme, title] = await Promise.all([
+          this.extractPathDetailsDescription(page),
+          this.extractProgramme(page),
+          this.extractTextPostMutation(page, this.selectors.name),
+        ]);
+        animateur = [];
+      } else {
+        [brief, programme, title, animateur] = await Promise.all([
+          super
+            .extractMany(page, this.selectors.brief)
+            .then((brief) => brief.join(" ")),
+          super.extractMany(page, this.selectors.programme),
+          super.extractText(page, this.selectors.name),
+          super.extractMany(page, this.selectors.animateur),
+        ]);
+      }
 
-      const programme = await this.extractProgramme(page);
-
-      console.log(this.url);
-      console.log(programme);
-      // const elementWithTags = await page.evaluate(() => {
-      //   // Define your XPath expression here
-      //   const xpathExpression =
-      //     '//div[@data-testid="accordion-item"][4]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div';
-      //   const element = document.evaluate(
-      //     xpathExpression,
-      //     document,
-      //     null,
-      //     XPathResult.FIRST_ORDERED_NODE_TYPE,
-      //     null
-      //   ).singleNodeValue;
-      //   return element ? element.outerHTML : null;
-      // });
-      // console.log(elementWithTags);
+      const duration = await super.extractText(page, this.selectors.duration);
+      return {
+        title,
+        platform: this.platform,
+        orga,
+        url,
+        // type: this.type,
+        brief,
+        programme,
+        duration,
+        animateur,
+        language: this.detectLanguage(brief),
+      };
     } catch (error) {
       console.error("Error scraping course data:", error);
       return null;
     } finally {
       if (browser) {
-        super.closeBrowser(browser);
+        await super.closeBrowser(browser);
       }
-    }
-  }
-
-  async extractParallel(page, xpath1, xpath2) {
-    try {
-      const titleXPath = "xpath/" + xpath1 + "/div/div[1]/h3";
-      if (this.type === "specialization") {
-        var descriptionXPath = await page.$$(
-          "xpath/" + xpath2 + "/div/div/div/div/p"
-        );
-      } else if (this.type === "certificate") {
-        var descriptionXPath = await page.$$(
-          "xpath/" + xpath2 + "/ul/li/div/div/div/p/span/span"
-        );
-      } else {
-        var descriptionXPath = await page.$$("xpath/" + xpath2);
-      }
-
-      const titleHandles = await page.$$(titleXPath);
-      const descriptionHandles = await page.$$(descriptionXPath);
-
-      let data = [];
-
-      const maxLength = Math.max(
-        titleHandles.length,
-        descriptionHandles.length
-      );
-
-      for (let i = 0; i < maxLength; i++) {
-        const title =
-          i < titleHandles.length
-            ? await page.evaluate(
-                (el) => el.textContent.trim(),
-                titleHandles[i]
-              )
-            : "";
-        let description = "";
-        if (i < descriptionHandles.length) {
-          const paragraphHandles = await descriptionHandles[i].$$("p");
-          const paragraphs = await Promise.all(
-            paragraphHandles.map((p) =>
-              page.evaluate((el) => el.textContent.trim(), p)
-            )
-          );
-          description = paragraphs.join("\n");
-        }
-        if (!description) {
-          data.push(title);
-        } else {
-          data.push(`${title}: ${description}`);
-        }
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error extracting parallel data:", error);
-      return null;
     }
   }
 }
-let scraper = new Coursera(
-  "https://www.coursera.org/specializations/data-science-fundamentals-python-sql"
-);
-// "https://www.coursera.org/specializations/become-a-journalist"
-// "https://www.coursera.org/professional-certificates/ibm-data-analyst"
-// "https://www.coursera.org/learn/financial-markets-global"
 
-scraper.scrape();
-scraper = new Coursera(
-  "https://www.coursera.org/learn/financial-markets-global"
-);
-
-scraper.scrape();
-scraper = new Coursera(
-  "https://www.coursera.org/specializations/become-a-journalist"
-);
-scraper.scrape();
-
-scraper = new Coursera(
-  "https://www.coursera.org/professional-certificates/ibm-data-analyst"
-);
-scraper.scrape();
-
-//*[@id="cds-react-aria-27-accordion-panel"]/div/div/p/text()
-//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3
-//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[2]/div/div/div/div/div/p
-
-//*[@data-e2e='sdp-course-list-link']
-//*[@class="cds-AccordionRoot-container cds-AccordionRoot-silent"]/div[2]/div/div/div/div/div/div/div/div/div/div/p
-
-//*[@id="cds-react-aria-25"]/div[1]/div/h3/a
-
-//*[@class="cds-AccordionRoot-container cds-AccordionRoot-silent"]/div[2]/div/div/div/div/div/div       /ul/li/div/div/div/p/span/span
-
-/************************************-      spec and cert         -***************************************/
-//! module title
-//div[@data-testid="accordion-item"]/div/div/div/div[1]/div/h3/a
-//! module body
-//div[@data-testid="accordion-item"]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div
-// /div/div /
-//   div /
-//   div[2] /
-//   div /
-//   div /
-//   div /
-//   div /
-//   div /
-//   div /
-//   div[2] /
-//   div /
-//   div /
-//   div;
-
-//! in case its a  list
-//div[@data-testid="accordion-item"]/div/div/div/div[2]/div/div/div/div/div/div[1]/ul/li
-
-/************************************-      course         -***************************************/
-
-//! module title
-//div[@data-testid='accordion-item']/div/div/div/div/button/span/span/span/h3
-//! module body
-//div[@data-testid='accordion-item']/div/div/div/div/div/div/div/div/div/p
-//! in case its a  list
-
-// https://www.coursera.org/specializations/become-a-journalist
-// https://www.coursera.org/learn/financial-markets-global
+let scraper = new OpenClassrooms();
+scraper
+  .scrape("https://openclassrooms.com/en/paths/898-data-analyst")
+  .then((data) => {
+    console.log(data);
+  });
+scraper
+  .scrape("https://openclassrooms.com/fr/paths/902-testeur-logiciel")
+  .then((data) => {
+    console.log(data);
+  });
+scraper
+  .scrape(
+    "https://openclassrooms.com/en/paths/102-responsable-en-securite-des-systemes-dinformation"
+  )
+  .then((data) => {
+    console.log(data);
+  });
+scraper
+  .scrape("https://openclassrooms.com/fr/paths/899-developpeur-web")
+  .then((data) => {
+    console.log(data);
+  });
+scraper
+  .scrape("https://openclassrooms.com/en/paths/772-digital-project-manager")
+  .then((data) => {
+    console.log(data);
+  });

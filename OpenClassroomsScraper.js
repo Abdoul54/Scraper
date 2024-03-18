@@ -59,7 +59,8 @@ class OpenClassrooms extends Scraper {
         duration:
           '//*[@id="path_details_screen"]/section[1]/div[1]/div/div[1]/div/div/div[1]/div[2]/div/div/div/span/p',
         programme: '//*[@id="path_details_description"]/div/div/ol',
-        altProgramme: '//*[@id="path_details_description"]/div/div/ul[1]',
+        altProgramme1: '//*[@id="path_details_description"]/div/div/ul',
+        altProgramme2: '//*[@id="path_details_description"]/div/div/ul[1]',
         animateur:
           '//*[@id="path_details_description"]/div/div/figure[2]/figcaption', //! Needs to be cleaned
       };
@@ -85,7 +86,13 @@ class OpenClassrooms extends Scraper {
    * @memberof OpenClassrooms
    */
   detectLanguage(text) {
-    return langdetect.detect(text);
+    if (langdetect.detect(text)[0].lang === "fr") {
+      return ["french"];
+    }
+    if (langdetect.detect(text)[0].lang === "en") {
+      return ["english"];
+    }
+    return [];
   }
 
   /**
@@ -160,6 +167,73 @@ class OpenClassrooms extends Scraper {
   }
 
   /**
+   * Extract the sibling before the lists
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath of the element to extract
+   * @returns {string} - The extracted sibling
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */
+  async extractSiblingBeforeLists(page, xpath) {
+    return await page.evaluate((xpath) => {
+      const ulElements = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null
+      );
+      const siblings = [];
+      for (let i = 0; i < ulElements.snapshotLength; i++) {
+        const ulElement = ulElements.snapshotItem(i);
+        if (ulElement) {
+          const precedingSibling = ulElement.previousElementSibling;
+          siblings.push(
+            precedingSibling.tagName + ": " + precedingSibling.textContent
+          );
+
+          if (precedingSibling.tagName === "H2") {
+            return ulElement.textContent.trim();
+          }
+        }
+      }
+      return siblings;
+    }, xpath);
+  }
+
+  /**
+   * Extract the programme of a path
+   * @param {object} page - The Puppeteer page
+   * @returns {string} - The extracted programme
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */
+  async extractProgramme(page) {
+    try {
+      let programme = await super
+        .extractMany(page, this.selectors.programme)
+        .then((programme) =>
+          programme && programme[0]
+            ? programme[0].trim().split("\n")
+            : super
+                .extractMany(page, this.selectors.altProgramme2)
+                .then((programme) => programme[0].trim().split("\n"))
+        );
+      if (!programme) {
+        programme = await this.extractSiblingBeforeLists.then((programme) =>
+          programme.split("\n")
+        );
+      }
+      return programme;
+    } catch (error) {
+      console.error("Error extracting programme:", error);
+      return null;
+    }
+  }
+
+  /**
    * Scrape the course data
    * @param {string} url - The URL of the OpenClassrooms course
    * @returns {object} - The scraped course data
@@ -186,15 +260,7 @@ class OpenClassrooms extends Scraper {
       if (this.type === "path") {
         [brief, programme, title] = await Promise.all([
           this.extractPathDetailsDescription(page),
-          super
-            .extractMany(page, this.selectors.programme)
-            .then((programme) =>
-              programme && programme[0]
-                ? programme[0].trim().split("\n")
-                : super
-                    .extractMany(page, this.selectors.altProgramme)
-                    .then((programme) => programme[0].trim().split("\n"))
-            ),
+          this.extractProgramme(page),
           this.extractTextPostMutation(page, this.selectors.name),
         ]);
         animateur = [];
@@ -210,7 +276,6 @@ class OpenClassrooms extends Scraper {
       }
 
       const duration = await super.extractText(page, this.selectors.duration);
-
       return {
         title,
         platform: this.platform,
@@ -221,7 +286,7 @@ class OpenClassrooms extends Scraper {
         programme,
         duration,
         animateur,
-        language: [this.detectLanguage(brief)[0].lang],
+        language: this.detectLanguage(brief),
       };
     } catch (error) {
       console.error("Error scraping course data:", error);
