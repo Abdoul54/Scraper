@@ -39,7 +39,6 @@ class Coursera extends Scraper {
    * @param {object} selectors - The selectors to switch
    * @memberof Coursera
    * @method
-   * @override
    */
   switchToModules = (selectors) => {
     selectors.orga = selectors.orga.replace("courses", "modules");
@@ -208,7 +207,6 @@ class Coursera extends Scraper {
    * @memberof Coursera
    * @method
    * @async
-   * @override
    */
   async scrape() {
     try {

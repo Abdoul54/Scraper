@@ -2,7 +2,8 @@ const express = require("express");
 const Coursera = require("./CourseraScraper");
 const OpenClassrooms = require("./OpenClassroomsScraper");
 const FunMooc = require("./FunMoocScraper");
-const Edraak = require("./EdraakScraper.js");
+const Edraak = require("./EdraakScraper");
+const Edx = require("./EdxScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
@@ -114,6 +115,23 @@ app.post("/api/scrape/edraak", async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Failed to scrape Edraak data" });
+  }
+});
+
+app.post("/api/scrape/edx", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "URL parameter is required" });
+    }
+    const edxScraper = new Edx();
+    const data = await edxScraper.scrape(url);
+    if (!data) {
+      return res.status(404).json({ error: "Course data not found" });
+    }
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to scrape Edx data" });
   }
 });
 

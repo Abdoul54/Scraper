@@ -166,6 +166,15 @@ class OpenClassrooms extends Scraper {
     }, xpath);
   }
 
+  /**
+   * Extract the sibling before a list
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath of the list
+   * @returns {string} - The extracted sibling
+   * @method
+   * @memberof OpenClassrooms
+   * @async
+   */ 
   async extractSiblingBeforeLists(page, xpath) {
     return await page.evaluate((xpath) => {
       const ulElements = document.evaluate(
@@ -237,7 +246,6 @@ class OpenClassrooms extends Scraper {
    * @param {string} url - The URL of the OpenClassrooms course
    * @returns {object} - The scraped course data
    * @throws {object} - The error message
-   * @override
    * @async
    * @method
    * @memberof OpenClassrooms

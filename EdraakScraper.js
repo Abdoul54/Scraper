@@ -73,7 +73,6 @@ class Edraak extends Scraper {
    * @memberof Edraak
    * @method
    * @async
-   * @override
    * @throws {object} - The error message
    */
   async scrape(url) {

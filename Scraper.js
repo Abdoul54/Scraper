@@ -1,10 +1,29 @@
 const puppeteer = require("puppeteer");
 
+/**
+ * The base scraper class
+ * @class
+ */
 class Scraper {
+  /**
+   * Create a scraper
+   * @constructor
+   * @param {string} platform - The name of the platform
+   * @memberof Scraper
+   * @method
+   */
   constructor(platform) {
     this.platform = platform;
   }
 
+  /**
+   * Launch a browser and navigate to a URL
+   * @param {string} url - The URL to navigate to
+   * @returns {object} - The browser and page objects
+   * @async
+   * @method
+   * @memberof Scraper
+   */
   async launchBrowser(url) {
     const browser = await puppeteer.launch({
       args: [
@@ -18,10 +37,28 @@ class Scraper {
     await page.goto(url);
     return { browser, page };
   }
+
+  /**
+   * Close the browser
+   * @param {object} browser - The browser object
+   * @async
+   * @method
+   * @memberof Scraper
+   */
   async closeBrowser(browser) {
     await browser.close();
   }
 
+  /**
+   * Extract text from an element
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the element
+   * @returns {string} - The text content of the element
+   * @async
+   * @method
+   * @memberof Scraper
+   * @throws {object} - The error message
+   */
   async extractText(page, xpath) {
     return await page.evaluate((xpath) => {
       const element = document.evaluate(
@@ -35,6 +72,16 @@ class Scraper {
     }, xpath);
   }
 
+  /**
+   * Extract text from multiple elements
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the elements
+   * @returns {string[]} - The text content of the elements
+   * @async
+   * @method
+   * @memberof Scraper
+   * @throws {object} - The error message
+   */
   async extractMany(page, xpath) {
     return await page.evaluate((xpath) => {
       const iterator = document.evaluate(
@@ -54,6 +101,17 @@ class Scraper {
     }, xpath);
   }
 
+  /**
+   * Extract an attribute from an element
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the element
+   * @param {string} attributeName - The name of the attribute
+   * @returns {string} - The value of the attribute
+   * @async
+   * @method
+   * @memberof Scraper
+   * @throws {object} - The error message
+   */
   async extractAttribute(page, xpath, attributeName) {
     return await page.evaluate(
       (xpath, attributeName) => {
@@ -71,6 +129,60 @@ class Scraper {
     );
   }
 
+  /**
+   * Extract an attribute from multiple elements
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the elements
+   * @param {string} attributeName - The name of the attribute
+   * @returns {string[]} - The values of the attribute
+   * @async
+   * @method
+   * @memberof Scraper
+   * @throws {object} - The error message
+   */
+  async extractManyWithMutation(page, xpath) {
+    return await page.evaluate(async (xpath) => {
+      const waitForElements = (xpath) => {
+        return new Promise((resolve) => {
+          const observer = new MutationObserver((mutations) => {
+            const elements = [];
+            const iterator = document.evaluate(
+              xpath,
+              document,
+              null,
+              XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+              null
+            );
+            let element = iterator.iterateNext();
+            while (element) {
+              elements.push(element);
+              element = iterator.iterateNext();
+            }
+            if (elements.length > 0) {
+              observer.disconnect();
+              resolve(elements.map((element) => element.textContent.trim()));
+            }
+          });
+          observer.observe(document, { childList: true, subtree: true });
+        });
+      };
+
+      const texts = await waitForElements(xpath);
+      return texts;
+    }, xpath);
+  }
+
+  /**
+   * Extract an attribute from multiple elements
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the elements
+   * @param {string} attributeName - The name of the attribute
+   * @returns {string[]} - The values of the attribute
+   * @async
+   * @method
+   * @memberof Scraper
+   * @throws {object} - The error message
+   */
   async extractAttributeFromAll(page, xpath, attributeName) {
     return await page.evaluate(
       (xpath, attributeName) => {
@@ -96,6 +208,14 @@ class Scraper {
     );
   }
 
+  /**
+   * Check if a URL exists
+   * @param {string} url - The URL to check
+   * @returns {boolean} - Whether the URL exists
+   * @async
+   * @method
+   * @memberof Scraper
+   */
   async checkURLExists(url) {
     try {
       const parsedURL = new URL(url);
@@ -111,6 +231,15 @@ class Scraper {
     }
   }
 
+  /**
+   * Check if an element exists
+   * @param {object} page - The page object
+   * @param {string} xpath - The XPath of the element
+   * @returns {boolean} - Whether the element exists
+   * @async
+   * @method
+   * @memberof Scraper
+   */
   async checkElementExistence(page, xpath) {
     return await page.$(xpath);
   }

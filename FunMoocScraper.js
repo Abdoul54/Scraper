@@ -30,8 +30,7 @@ class FunMooc extends Scraper {
       languages: "//div[@class='subheader__content']/div[2]/ul/div/li/span",
     };
   }
-  // *[@id="site-content"]/div[2]/div[1]/div/div[1]/div[2]/section
-  //section[@class="course-detail__row course-detail__plan"]+ /div or /ul/li,
+
   /**
    * Extract the languages from the data
    * @param {string} data - The data to extract the languages from
@@ -108,6 +107,16 @@ class FunMooc extends Scraper {
     return cleanedStrings;
   }
 
+  /**
+   * Extract a limited number of elements
+   * @param {object} page - The Puppeteer page
+   * @param {string} xpath - The XPath of the elements
+   * @param {number} limit - The limit of elements to extract
+   * @returns {array} - The extracted elements
+   * @memberof FunMooc
+   * @method
+   * @async
+   */
   async extractLimited(page, xpath, limit) {
     return await page.evaluate(
       (xpath, limit) => {
@@ -138,7 +147,6 @@ class FunMooc extends Scraper {
    * @param {string} url - The URL of the Fun-Mooc course
    * @returns {object} - The scraped course data
    * @throws {object} - The error message
-   * @override
    * @async
    * @method
    * @memberof FunMooc
