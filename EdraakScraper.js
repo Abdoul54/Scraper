@@ -104,7 +104,7 @@ class Edraak extends Scraper {
         title,
         platform: this.platform,
         url,
-        orga,
+        orga: orga ? orga : "Edraak",
         brief,
         programme,
         duration: null,

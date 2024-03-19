@@ -4,6 +4,7 @@ const OpenClassrooms = require("./OpenClassroomsScraper");
 const FunMooc = require("./FunMoocScraper");
 const Edraak = require("./EdraakScraper");
 const Edx = require("./EdxScraper");
+const Unow = require("./UnowScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
   console.log("Request Body:", req.body);
   next();
 });
+
 /**
  * Route to scrape Coursera data
  * @param {string} url - The URL of the Coursera course
@@ -119,6 +121,8 @@ app.post("/api/scrape/edraak", async (req, res) => {
   }
 });
 
+/**
+ * TODO: Route to scrape Edx data
 app.post("/api/scrape/edx", async (req, res) => {
   try {
     const { url } = req.body;
@@ -133,6 +137,31 @@ app.post("/api/scrape/edx", async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Failed to scrape Edx data" });
+  }
+});
+*/
+
+/**
+ * Route to scrape Unow data
+ * @param {string} url - The URL of the Unow course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
+app.post("/api/scrape/unow", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "URL parameter is required" });
+    }
+    const unowScraper = new Unow();
+    const data = await unowScraper.scrape(url);
+    if (!data) {
+      return res.status(404).json({ error: "Course data not found" });
+    }
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to scrape Unow data" });
   }
 });
 

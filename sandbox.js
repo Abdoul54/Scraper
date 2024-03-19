@@ -1,86 +1,19 @@
-// //! courses
-const selectors = {
-  name: '//div[@class="course-about desktop course-info-content"]//div[1]/h1',
-  orga: '//div[@class="course-about desktop course-info-content"]//div[1]/ul/li[1]/a',
-  brief: '//div[@class="mt-2 lead-sm html-data"]',
-  programme:
-    '//div[@class="course-about desktop course-info-content"]/div[4]/div/div[3]/div/div[2]/div/ul/li',
-  //div[@class="course-about desktop course-info-content"]/div[4]/div/div[4]/div/div[2]/div/ul
-  duration:
-    '//div[@class="course-about desktop course-info-content"]/div[2]/div/div[1]/div/div/div[1]/div/div[1]', //*
-  animateur: '//div[@class="instructor-card px-4 py-3.5 rounded"]/div/h3',
-  languages:
-    '//div[@class="course-about desktop course-info-content"]/div[4]/div/div[2]/div/div/div[2]/ul/li[1]',
-  //*[@id="main-content"]/div                              /div[4]/div/div[3]/div/div/div[1]/ul/li[5]/text()
-};
-
 const Scraper = require("./Scraper");
 
 class EDX extends Scraper {
   constructor() {
     super("EDX");
     this.selectors = {
-      name: '//div[@class="course-about desktop course-info-content"]//div[1]/h1',
-      orga: '//div[@class="course-about desktop course-info-content"]//div[1]/ul/li[1]/a',
-      brief: '//div[@class="mt-2 lead-sm html-data"]',
+      name: '//div[@class="main-block__content course-hero__content"]//h1',
+      // orga, //* Not available
+      brief: '//div[@class="main-block__content course-hero__content"]//p[1]',
       programme:
         '//div[@class="course-about desktop course-info-content"]/div[4]/div/div[3]/div/div[2]/div/ul/li',
-      duration:
-        '//div[@class="course-about desktop course-info-content"]/div[2]/div/div[1]/div/div/div[1]/div/div[1]', //*
-      animateur: '//div[@class="instructor-card px-4 py-3.5 rounded"]/div/h3',
-      languages:
-        '//div[@class="course-about desktop course-info-content"]/div[4]/div/div[2]/div/div/div[2]/ul/li[1]',
+      duration: '//ul[@class="course-offers__details"]/li', //* specify the li
+      animateur: '//h3[@class="unow-heading-4 mt-0"]',
+      // languages, //* Always fr
     };
     this.type = "course";
-  }
-  async extractMany(page, xpath) {
-    return await page.evaluate((xpath) => {
-      const iterator = document.evaluate(
-        xpath,
-        document,
-        null,
-        XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-        null
-      );
-      let element = iterator.iterateNext();
-      const texts = [];
-      while (element) {
-        texts.push(element.textContent.trim());
-        element = iterator.iterateNext();
-      }
-      return texts;
-    }, xpath);
-  }
-  async extractManyWithMutation(page, xpath) {
-    return await page.evaluate(async (xpath) => {
-      const waitForElements = (xpath) => {
-        return new Promise((resolve) => {
-          const observer = new MutationObserver((mutations) => {
-            const elements = [];
-            const iterator = document.evaluate(
-              xpath,
-              document,
-              null,
-              XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-              null
-            );
-            let element = iterator.iterateNext();
-            while (element) {
-              elements.push(element);
-              element = iterator.iterateNext();
-            }
-            if (elements.length > 0) {
-              observer.disconnect();
-              resolve(elements.map((element) => element.textContent.trim()));
-            }
-          });
-          observer.observe(document, { childList: true, subtree: true });
-        });
-      };
-
-      const texts = await waitForElements(xpath);
-      return texts;
-    }, xpath);
   }
 
   async scrape(url) {
@@ -91,8 +24,18 @@ class EDX extends Scraper {
       }
       var { browser, page } = await super.launchBrowser(url);
 
-      const animateur = await this.extractManyWithMutation(page, this.selectors.animateur);
-      return { animateur };
+      const duration = await super
+        .extractMany(page, this.selectors.duration)
+        .then((durations) =>
+          durations
+            .map((duration) => {
+              if (duration.trim().includes("Durée")) {
+                return duration.replace("Durée", "").trim();
+              }
+            })
+            .filter(Boolean)
+        );
+      return duration;
     } catch (error) {
       console.error("Error scraping course data:", error);
       return null;
@@ -109,14 +52,14 @@ class EDX extends Scraper {
 const edXScraper = new EDX();
 edXScraper
   .scrape(
-    "https://www.edx.org/learn/python/harvard-university-cs50-s-introduction-to-programming-with-python"
+    "https://www.unow.fr/formations/chatgpt-midjourney-les-intelligences-artificielles-au-service-de-la-formation/"
   )
   .then(console.log);
-edXScraper
-  .scrape("https://www.edx.org/learn/excel/ibm-analyzing-data-with-excel")
-  .then(console.log);
-edXScraper
-  .scrape(
-    "https://www.edx.org/learn/six-sigma/technische-universitat-munchen-six-sigma-analyze-improve-control"
-  )
-  .then(console.log);
+// edXScraper
+//   .scrape("https://www.edx.org/learn/excel/ibm-analyzing-data-with-excel")
+//   .then(console.log);
+// edXScraper
+//   .scrape(
+//     "https://www.edx.org/learn/six-sigma/technische-universitat-munchen-six-sigma-analyze-improve-control"
+//   )
+//   .then(console.log);
