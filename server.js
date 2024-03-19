@@ -11,16 +11,17 @@ const port = 3000;
 app.use(express.json());
 
 app.use((req, res, next) => {
+  console.log("========================================");
+  console.log("Request received");
   console.log(`Request received at ${new Date().toLocaleString()}`);
+  console.log("Client IP:", req.ip);
   console.log("Request URL:", req.url);
   console.log("Request Method:", req.method);
-  console.log("Request Headers:", req.headers);
   console.log("Request Parameters:", req.params);
   console.log("Query Parameters:", req.query);
   console.log("Request Body:", req.body);
   next();
 });
-
 /**
  * Route to scrape Coursera data
  * @param {string} url - The URL of the Coursera course
