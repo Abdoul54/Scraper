@@ -15,7 +15,10 @@ app.use((req, res, next) => {
   console.log("========================================");
   console.log("Request received");
   console.log(`Request received at ${new Date().toLocaleString()}`);
-  console.log("Client IP:", req.ip);
+  console.log(
+    "Client IP:",
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress
+  );
   console.log("Request URL:", req.url);
   console.log("Request Method:", req.method);
   console.log("Request Parameters:", req.params);
