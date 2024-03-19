@@ -54,6 +54,23 @@ class Scraper {
     }, xpath);
   }
 
+  async extractAttribute(page, xpath, attributeName) {
+    return await page.evaluate(
+      (xpath, attributeName) => {
+        const element = document.evaluate(
+          xpath,
+          document,
+          null,
+          XPathResult.FIRST_ORDERED_NODE_TYPE,
+          null
+        ).singleNodeValue;
+        return element ? element.getAttribute(attributeName) : null;
+      },
+      xpath,
+      attributeName
+    );
+  }
+
   async extractAttributeFromAll(page, xpath, attributeName) {
     return await page.evaluate(
       (xpath, attributeName) => {

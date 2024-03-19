@@ -3,6 +3,3 @@
 api.rest
 sandbox.js
 *.test.js
-
-/html/body/div[2]/div/main/div[5]/div/div/div/div[2]/div/div/div/div[3]/div/div/div         /div[2]/div/div/div/div/div/div/div[2]/div/div/div/p
-/html/body/div[2]/div/main/div[5]/div/div/div/div[2]/div/div/div/div[3]/div/div/div         /div[1]/div/h3/a

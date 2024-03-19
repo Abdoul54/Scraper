@@ -1,19 +1,19 @@
-// //! courses
-// const selectors = {};
-
-// //! specializations
-// const selectorss = {
-//   name,
-//   orga: '//img[@class="logoImg"]', //* Get The Alt
-//   brief,
-//   programme, //* Does not exist
-//   duration,
-//   animateur,
-//   languages, //* en/ar
-// };
 const Scraper = require("./Scraper");
 
+/**
+ * Edraak scraper
+ * @extends Scraper
+ * @class
+ */
 class Edraak extends Scraper {
+  /**
+   * Create an Edraak scraper
+   * @constructor
+   * @param {string} platform - The name of the platform
+   * @param {object} selectors - The selectors to use for scraping
+   * @memberof Edraak
+   * @method
+   */
   constructor() {
     super("Edraak");
     this.selectors = {
@@ -28,12 +28,27 @@ class Edraak extends Scraper {
     };
     this.type = "course";
   }
+
+  /**
+   * Check the type of the URL
+   * @param {string} url - The URL to check
+   * @memberof Edraak
+   * @method
+   */
   checkType(url) {
     if (url.includes("specialization")) {
       this.type = "specialization";
     }
   }
 
+  /**
+   * Extract the programme from the data
+   * @param {object} page - The Puppeteer page object
+   * @returns {array} - The extracted programme
+   * @memberof Edraak
+   * @method
+   * @async
+   */
   async extractProgramme(page) {
     let programme = await super.extractMany(page, this.selectors.programme);
     if (programme.length === 0) {
@@ -41,9 +56,26 @@ class Edraak extends Scraper {
     }
     return programme;
   }
+
+  /**
+   * Switch to the specialization selectors
+   * @memberof Edraak
+   * @method
+   */
   switchToSpecialization() {
     this.selectors.orga = '//img[@class="logoImg"]';
   }
+
+  /**
+   * Scrape the Edraak course data
+   * @param {string} url - The URL of the Edraak course
+   * @returns {object} - The scraped course data
+   * @memberof Edraak
+   * @method
+   * @async
+   * @override
+   * @throws {object} - The error message
+   */
   async scrape(url) {
     try {
       if (!(await super.checkURLExists(url))) {
@@ -90,6 +122,5 @@ class Edraak extends Scraper {
     }
   }
 }
-
 
 module.exports = Edraak;
