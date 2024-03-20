@@ -96,6 +96,26 @@ class OpenClassrooms extends Scraper {
   }
 
   /**
+   * Convert hours to HH:MM format
+   * @param {string} duration - The text to convert
+   * @returns {string} - The converted text
+   * @method
+   * @memberof OpenClassrooms
+   */
+  convertHoursToHHMM(duration) {
+    const hours = parseInt(duration.match(/\d+/g)[0]);
+
+    const totalMinutes = hours * 60;
+
+    const formattedHours = Math.floor(totalMinutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const formattedMinutes = (totalMinutes % 60).toString().padStart(2, "0");
+
+    return formattedHours + ":" + formattedMinutes;
+  }
+
+  /**
    * Extract the description of a path
    * @param {object} page - The Puppeteer page
    * @returns {string} - The extracted description
@@ -174,7 +194,7 @@ class OpenClassrooms extends Scraper {
    * @method
    * @memberof OpenClassrooms
    * @async
-   */ 
+   */
   async extractSiblingBeforeLists(page, xpath) {
     return await page.evaluate((xpath) => {
       const ulElements = document.evaluate(
@@ -277,7 +297,6 @@ class OpenClassrooms extends Scraper {
           this.extractProgramme(page),
           this.extractTextPostMutation(page, this.selectors.name),
         ]);
-        console.log(programme);
         animateur = [];
       } else {
         [brief, programme, title, animateur] = await Promise.all([
@@ -290,7 +309,9 @@ class OpenClassrooms extends Scraper {
         ]);
       }
 
-      const duration = await super.extractText(page, this.selectors.duration);
+      const duration = await super
+        .extractText(page, this.selectors.duration)
+        .then((duration) => this.convertHoursToHHMM(duration));
       return {
         title,
         platform: this.platform,

@@ -143,6 +143,28 @@ class FunMooc extends Scraper {
   }
 
   /**
+   * Convert the duration from hours to HH:MM format
+   * @param {string} duration - The duration to convert
+   * @returns {string} - The converted duration
+   * @memberof FunMooc
+   * @method
+   */
+  convertHoursToHHMM(duration) {
+    // Extract the number of hours from the string
+    const hours = parseInt(duration.match(/\d+/g)[0]);
+
+    // Calculate the number of minutes
+    const totalMinutes = hours * 60;
+
+    // Calculate formatted hours and minutes
+    const formattedHours = Math.floor(totalMinutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const formattedMinutes = (totalMinutes % 60).toString().padStart(2, "0");
+
+    return formattedHours + ":" + formattedMinutes;
+  }
+  /**
    * Scrape the course data
    * @param {string} url - The URL of the Fun-Mooc course
    * @returns {object} - The scraped course data
@@ -171,7 +193,8 @@ class FunMooc extends Scraper {
           ),
           super
             .extractText(page, this.selectors.duration)
-            .then((duration) => duration.split(": ")[1]),
+            .then((duration) => duration.split(": ")[1])
+            .then((duration) => this.convertHoursToHHMM(duration)),
           this.scrapeElementContent(page).then((programme) =>
             programme.length !== 0
               ? this.cleanStrings(programme)

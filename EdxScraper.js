@@ -19,7 +19,8 @@ class EDX extends Scraper {
       brief: '//div[@class="mt-2 lead-sm html-data"]',
       programme: '//div[@class="mt-2 html-data"]/ul/li',
       duration:
-        '//div[@class="course-about desktop course-info-content"]/div[2]/div/div[1]/div/div/div[1]/div/div[1]', //*
+        '//div[@class="course-about desktop course-info-content"]/div[2]/div/div[1]/div/div/div[1]/div/div[1]',
+      pace: '//div[@class="course-about desktop course-info-content"]/div[2]/div/div[1]/div/div/div[1]/div/div[2]',
       animateur: '//div[@class="instructor-card px-4 py-3.5 rounded"]/div/h3',
       languages:
         '//div[@class="course-about desktop course-info-content"]/div[4]/div/div[2]/div/div/div[2]/ul/li[1]',
@@ -74,7 +75,7 @@ class EDX extends Scraper {
       }
       var { browser, page } = await super.launchBrowser(url);
 
-      const [title, brief, animateur, programme, duration] = await Promise.all([
+      const [title, brief, animateur, programme, duration, pace] = await Promise.all([
         super.extractText(page, this.selectors.name),
         super
           .extractMany(page, this.selectors.brief)
@@ -83,7 +84,18 @@ class EDX extends Scraper {
         super
           .extractMany(page, this.selectors.programme)
           .then((programme) => programme.map((prog) => prog.trim())),
-        super.extractText(page, this.selectors.duration),
+        super
+          .extractText(page, this.selectors.duration)
+          .then((duration) => duration.split(" ")[0]),
+        super.extractText(page, this.selectors.pace).then((pace) => {
+          pace = pace.split(" ")[0];
+          console.log(pace); // Add this line
+          console.log(pace.includes("–"));
+          if (pace.includes("–")) {
+            return pace.split("–")[1];
+          }
+          return pace;
+        }),
       ]);
       const { orga, languages } = await this.extractLanguagesAndOrga(page);
       return {
@@ -93,7 +105,7 @@ class EDX extends Scraper {
         orga,
         brief,
         programme,
-        duration,
+        duration: pace * duration + ":00",
         animateur,
         languages,
       };

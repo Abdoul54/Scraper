@@ -1,6 +1,17 @@
 const Scraper = require("./Scraper");
 
+/**
+ * Unow scraper
+ * @extends Scraper
+ * @class
+ */
 class Unow extends Scraper {
+  /**
+   * Create a Unow scraper
+   * @constructor
+   * @memberof Unow
+   * @method
+   */
   constructor() {
     super("Unow");
     this.selectors = {
@@ -15,6 +26,15 @@ class Unow extends Scraper {
     this.type = "course";
   }
 
+  /**
+   * Scrape Unow data
+   * @param {string} url - The URL of the Unow course
+   * @returns {object} - The scraped course data
+   * @async
+   * @method
+   * @memberof Unow
+   * @throws {object} - The error message
+   */
   async scrape(url) {
     try {
       if (!(await super.checkURLExists(url))) {
@@ -37,7 +57,9 @@ class Unow extends Scraper {
           durations
             .map((duration) => {
               if (duration.trim().includes("Durée")) {
-                return duration.replace("Durée", "").trim();
+                return (
+                  duration.replace("Durée", "").trim().split("h")[0] + ":00"
+                );
               }
             })
             .filter(Boolean)
@@ -51,7 +73,7 @@ class Unow extends Scraper {
         orga: "Unow",
         brief,
         programme,
-        duration,
+        duration: duration[0],
         animateur,
         languages: ["french"],
       };

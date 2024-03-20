@@ -26,6 +26,12 @@ curl -X POST "http://example.com/api/scrape/funmooc" -H "Content-Type: applicati
 curl -X POST "http://example.com/api/scrape/edraak" -H "Content-Type: application/json" -d '{"url":"https://edraak.com/learn/course"}'
 ```
 
+### **Scraping EDX**
+
+```curl
+curl -X POST "http://example.com/api/scrape/edx" -H "Content-Type: application/json" -d '{"url":"https://edx.org/learn/course"}'
+```
+
 ### **Scraping Unow**
 
 ```curl

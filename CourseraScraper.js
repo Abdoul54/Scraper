@@ -73,6 +73,62 @@ class Coursera extends Scraper {
   }
 
   /**
+   * Convert hours to HH:MM format
+   * @param {number} hours - The hours to convert
+   * @returns {string} - The hours in HH:MM format
+   * @memberof Coursera
+   * @method
+   */
+  convertHoursToHHMM(hours) {
+    var integerHours = Math.floor(hours);
+    var decimalHours = hours - integerHours;
+
+    var minutes = Math.round(decimalHours * 60);
+
+    var formattedHours = ("0" + integerHours).slice(-2);
+    var formattedMinutes = ("0" + minutes).slice(-2);
+
+    return formattedHours + ":" + formattedMinutes;
+  }
+
+  /**
+   * Convert months and hours per week to HH:MM format
+   * @param {number} months - The number of months
+   * @param {number} hoursPerWeek - The number of hours per week
+   * @returns {string} - The duration in HH:MM format
+   * @memberof Coursera
+   * @method
+   */
+  convertMonthsAndHoursToHHMM(months, hoursPerWeek) {
+    var totalHours = months * 4 * hoursPerWeek;
+
+    var formattedHours = ("0" + Math.floor(totalHours)).slice(-2);
+    var formattedMinutes = "00";
+
+    return formattedHours + ":" + formattedMinutes;
+  }
+
+  /**
+   * Convert the duration to HH:MM format
+   * @param {string} duration - The duration to convert
+   * @returns {string} - The duration in HH:MM format
+   * @memberof Coursera
+   * @method
+   */
+  convertDurationToHHMM(duration) {
+    if (duration.includes("months")) {
+      var [months, hoursPerWeek] = duration.match(/\d+/g);
+      return this.convertMonthsAndHoursToHHMM(
+        parseInt(months),
+        parseInt(hoursPerWeek)
+      );
+    } else {
+      var hours = parseFloat(duration);
+      return this.convertHoursToHHMM(hours);
+    }
+  }
+
+  /**
    * Extract the languages from the course page
    * @param {object} page - The Puppeteer page
    * @param {string} selector - The selector for the languages
@@ -144,7 +200,7 @@ class Coursera extends Scraper {
    * @method
    * @async
    */
-  async extarctDuration(page) {
+  async extractDuration(page) {
     const words = ["hours", "days", "weeks", "months"];
     const elementHandle = await page.$$(
       "xpath///div[@class='cds-119 cds-Typography-base css-h1jogs cds-121']"
@@ -233,7 +289,9 @@ class Coursera extends Scraper {
             .extractMany(page, this.selectors.brief)
             .then((brief) => brief.map((el) => el.trim()).join(" ")),
           this.extractProgramme(page),
-          this.extarctDuration(page, this.selectors.duration),
+          this.extractDuration(page, this.selectors.duration).then((duration) =>
+            this.convertDurationToHHMM(...duration)
+          ),
           super
             .extractMany(page, this.selectors.animateur)
             .then((animateur) => [...new Set(animateur)].slice(0, 3)),

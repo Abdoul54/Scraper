@@ -125,7 +125,12 @@ app.post("/api/scrape/edraak", async (req, res) => {
 });
 
 /**
- * TODO: Route to scrape Edx data
+ * Route to scrape Edx data
+ * @param {string} url - The URL of the Edx course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
 app.post("/api/scrape/edx", async (req, res) => {
   try {
     const { url } = req.body;
@@ -142,7 +147,6 @@ app.post("/api/scrape/edx", async (req, res) => {
     res.status(500).json({ error: "Failed to scrape Edx data" });
   }
 });
-*/
 
 /**
  * Route to scrape Unow data
