@@ -75,28 +75,27 @@ class EDX extends Scraper {
       }
       var { browser, page } = await super.launchBrowser(url);
 
-      const [title, brief, animateur, programme, duration, pace] = await Promise.all([
-        super.extractText(page, this.selectors.name),
-        super
-          .extractMany(page, this.selectors.brief)
-          .then((brief) => brief.join(" ").trim().replace(/\n/g, "")),
-        super.extractManyWithMutation(page, this.selectors.animateur),
-        super
-          .extractMany(page, this.selectors.programme)
-          .then((programme) => programme.map((prog) => prog.trim())),
-        super
-          .extractText(page, this.selectors.duration)
-          .then((duration) => duration.split(" ")[0]),
-        super.extractText(page, this.selectors.pace).then((pace) => {
-          pace = pace.split(" ")[0];
-          console.log(pace); // Add this line
-          console.log(pace.includes("–"));
-          if (pace.includes("–")) {
-            return pace.split("–")[1];
-          }
-          return pace;
-        }),
-      ]);
+      const [title, brief, animateur, programme, duration, pace] =
+        await Promise.all([
+          super.extractText(page, this.selectors.name),
+          super
+            .extractMany(page, this.selectors.brief)
+            .then((brief) => brief.join(" ").trim().replace(/\n/g, "")),
+          super.extractManyWithMutation(page, this.selectors.animateur),
+          super
+            .extractMany(page, this.selectors.programme)
+            .then((programme) => programme.map((prog) => prog.trim())),
+          super
+            .extractText(page, this.selectors.duration)
+            .then((duration) => duration.split(" ")[0]),
+          super.extractText(page, this.selectors.pace).then((pace) => {
+            pace = pace.split(" ")[0];
+            if (pace.includes("–")) {
+              return pace.split("–")[1];
+            }
+            return pace;
+          }),
+        ]);
       const { orga, languages } = await this.extractLanguagesAndOrga(page);
       return {
         title,
