@@ -50,7 +50,7 @@ class FutureLearn extends Scraper {
           super.extractText(page, this.selectors.orga),
           super
             .extractMany(page, this.selectors.brief)
-            .then((briefs) => briefs.join("").replace(/\n/g).trim()),
+            .then((briefs) => briefs.join("").replace(/\n/g, " ").trim()),
           super
             .extractMany(page, this.selectors.programme)
             .then((programme) =>
