@@ -176,6 +176,13 @@ app.post("/api/scrape/unow", async (req, res) => {
   }
 });
 
+/**
+ * Route to scrape FutureLearn data
+ * @param {string} url - The URL of the FutureLearn course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
 app.post("/api/scrape/futurelearn", async (req, res) => {
   try {
     const { url } = req.body;
@@ -194,7 +201,8 @@ app.post("/api/scrape/futurelearn", async (req, res) => {
       .json({ message: "Failed to scrape FutureLearn data", error });
   }
 });
-//! ********************** TESTING ROUTES *********************** */
+
+//! ********************** HEALTH CHECK ROUTES *********************** */
 
 /**
  * Route to test the health of the server

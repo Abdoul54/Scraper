@@ -1,39 +1,29 @@
 # Scraper API
 
-## Endpoints (so far):
+## Platforms
 
-### **Scraping Coursera**
+These are the platform can scrape at the moment:
 
-```curl
-curl -X POST "http://example.com/api/scrape/coursera" -H "Content-Type: application/json" -d '{"url":"https://coursera.com/learn/course"}'
-```
+- **Coursera**
 
-### **Scraping OpenClassRooms**
+- **OpenClassRooms**
 
-```curl
-curl -X POST "http://example.com/api/scrape/openclassrooms" -H "Content-Type: application/json" -d '{"url":"https://openclassrooms.com/learn/course"}'
-```
+- **Fun-Mooc**
 
-### **Scraping Fun-Mooc**
+- **Edraak**
 
-```curl
-curl -X POST "http://example.com/api/scrape/funmooc" -H "Content-Type: application/json" -d '{"url":"https://fun-mooc.com/learn/course"}'
-```
+- **EDX**
 
-### **Scraping Edraak**
+- **Unow**
+
+- **FutureLearn**
+
+## Endpoint:
 
 ```curl
-curl -X POST "http://example.com/api/scrape/edraak" -H "Content-Type: application/json" -d '{"url":"https://edraak.com/learn/course"}'
+curl -X POST "https://scraper-hbqd.onrender.com/api/scrape/[PLATFORM_NAME]" -H "Content-Type: application/json" -d '{"url":[COURSE_LINK]}'
 ```
 
-### **Scraping EDX**
+Replace `[PLATFORM_NAME]` with the name of the platform you want to scrape data from. This could be a website or an online service.
 
-```curl
-curl -X POST "http://example.com/api/scrape/edx" -H "Content-Type: application/json" -d '{"url":"https://edx.org/learn/course"}'
-```
-
-### **Scraping Unow**
-
-```curl
-curl -X POST "http://example.com/api/scrape/unow" -H "Content-Type: application/json" -d '{"url":"https://unow.fr/learn/course"}'
-```
+Replace `[COURSE_LINK]` with the URL of the course you want to scrape data from.

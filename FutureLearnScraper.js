@@ -1,4 +1,5 @@
 const Scraper = require("./Scraper");
+
 /**
  * FutureLearn scraper
  * @extends Scraper
@@ -28,6 +29,14 @@ class FutureLearn extends Scraper {
     this.type = "course";
   }
 
+  /**
+   * Extract languages from the page
+   * @param {Object} page - The page object
+   * @returns {Array} The languages
+   * @memberof FutureLearn
+   * @method
+   * @async
+   */
   async scrape(url) {
     try {
       if (!(await super.checkURLExists(url))) {
