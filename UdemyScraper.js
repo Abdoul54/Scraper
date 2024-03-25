@@ -135,9 +135,7 @@ class Udemy extends Scraper {
 				await this.extractLanguages(page),
 			]);
 			const showMoreButton = await page
-				.waitForSelector('xpath///button[@data-purpose="show-more"]', {
-					timeout: 15000,
-				})
+				.waitForSelector('xpath///button[@data-purpose="show-more"]')
 				.catch(() => null);
 			if (showMoreButton) {
 				await showMoreButton.click();
