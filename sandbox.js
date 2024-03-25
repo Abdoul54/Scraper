@@ -18,7 +18,7 @@ class Udemy extends Scraper {
 			name: '//h1[@data-purpose="lead-title"]',
 			brief: '//div[@data-purpose="safely-set-inner-html:description:description"]/p',
 			programme: '//span[@class="ud-accordion-panel-title"]/span[1]',
-			animateur: '//span[@class="instructor-links--names--fJWai"]/a/span',
+			animateur: '//span[@class="instructor-links--names--fJWai"]/a',
 			duration: '//span[@class="ud-accordion-panel-title"]/span[2]/span',
 			languages: '//div[@data-purpose="lead-course-locale"]/text()',
 		};
@@ -31,27 +31,9 @@ class Udemy extends Scraper {
 	 * @memberof Udemy
 	 * @method
 	 */
-	convertDurationsToHHMM(durations) {
-		return durations.map((duration) => {
-			let totalMinutes = 0;
-			const parts = duration.split(" ");
-			parts.forEach((part) => {
-				if (part.includes("hr")) {
-					const hours = parseInt(part.replace("hr", ""), 10);
-					totalMinutes += hours * 60;
-				} else if (part.includes("min")) {
-					const minutes = parseInt(part.replace("min", ""), 10);
-					totalMinutes += minutes;
-				}
-			});
-
-			const hours = Math.floor(totalMinutes / 60);
-			const minutes = totalMinutes % 60;
-
-			return `${hours.toString().padStart(2, "0")}:${minutes
-				.toString()
-				.padStart(2, "0")}`;
-		});
+	convertToMinutes(timeStr) {
+		const [hours, minutes] = timeStr.split("hr ");
+		return parseInt(hours) * 60 + parseInt(minutes || 0);
 	}
 
 	/**
@@ -61,18 +43,35 @@ class Udemy extends Scraper {
 	 * @memberof Udemy
 	 * @method
 	 */
-	calculateTotalDuration(timeArray) {
-		let totalMinutes = 0;
-
-		for (let i = 0; i < timeArray.length; i++) {
-			const [hours, minutes] = timeArray[i].split(":").map(Number);
-			totalMinutes += hours * 60 + minutes;
-		}
-
+	totalDurationAndConvertToHHMM(timeIntervals) {
+		const totalMinutes = timeIntervals.reduce(
+			(total, time) => total + this.convertToMinutes(time),
+			0
+		);
 		const hours = Math.floor(totalMinutes / 60);
 		const minutes = totalMinutes % 60;
+		return `${hours.toString().padStart(2, "0")}:${minutes
+			.toString()
+			.padStart(2, "0")}`;
+	}
 
-		return `${hours}:${minutes}`;
+	/**
+	 * Clean the text
+	 * @param {string} text - The text to clean
+	 * @returns {string} - The cleaned text
+	 * @memberof Udemy
+	 * @method
+	 */
+	cleanText(text) {
+		text = text.replace(/[^\x20-\x7E]/g, "");
+		text = text
+			.replace(/&quot;/g, '"')
+			.replace(/&apos;/g, "'")
+			.replace(/&amp;/g, "&")
+			.replace(/&lt;/g, "<")
+			.replace(/&gt;/g, ">");
+		text = text.replace(/\s+/g, " ").trim();
+		return text;
 	}
 
 	/**
@@ -101,6 +100,37 @@ class Udemy extends Scraper {
 		return languages;
 	}
 
+	async extractProgramme(page, xpath1) {
+		try {
+			const headers = await super.extractManyWithMutation(
+				page,
+				'//span[@class="section--section-title--svpHP"]'
+			);
+			const programme = [];
+			for (let i = 1; i <= headers.length; i++) {
+				const element = await super
+					.extractMany(
+						page,
+						`//div[@data-purpose="course-curriculum"]/div[2]/div[${i}]/div[2]/div/ul/li/div/div/div/div/span`
+					)
+					.then(
+						(subheader) =>
+							`<ul>${subheader.map(
+								(sub) => `<li>${sub.trim()}</li>`
+							)}</ul>`
+					)
+					.then((subheader) => subheader.replace(/,/g, ""));
+				programme.push(
+					`<div><h3>${headers[i - 1]}</h3>${element}</div>`
+				);
+			}
+			return programme;
+		} catch (error) {
+			console.error("Error scraping course content:", error);
+			return null;
+		}
+	}
+
 	/**
 	 * Scrape the Udemy course data
 	 * @param {string} url - The URL of the Udemy course
@@ -112,30 +142,44 @@ class Udemy extends Scraper {
 	 */
 	async scrape(url) {
 		try {
-			// let languages;
-			// if (!(await this.checkURLExists(this.url))) {
-			// 	throw new Error("URL does not exist");
-			// }
 			var { browser, page } = await super.launchBrowser(url);
 
-			const showMoreButton = await page
-				.waitForSelector('xpath///button[@data-purpose="show-more"]')
-				.catch(() => null);
+			const [title, brief, programme, animateur, duration, languages] =
+				await Promise.all([
+					await super.extractText(page, this.selectors.name),
+					await super
+						.extractMany(page, this.selectors.brief)
+						.then((paragraphs) => {
+							let index = paragraphs.findIndex((paragraph) =>
+								paragraph.endsWith(":")
+							);
+							return index !== -1
+								? paragraphs.slice(0, index)
+								: paragraphs;
+						})
+						.then((paragraphs) =>
+							this.cleanText(paragraphs.join("\n"))
+						),
+					await this.extractProgramme(page, this.selectors.programme),
+					await super.extractMany(page, this.selectors.animateur),
+					await super
+						.extractMany(page, this.selectors.duration)
+						.then((durations) =>
+							this.totalDurationAndConvertToHHMM(durations)
+						),
+					await this.extractLanguages(page),
+				]);
 
-			var programme = await super.extractMany(
-				page,
-				'//span[@class="section--section-title--svpHP"]'
-			);
-			var duration = await super
-				.extractMany(page, this.selectors.duration)
-				.then((durations) =>
-					this.calculateTotalDuration(
-						this.convertDurationsToHHMM(durations)
-					)
-				);
 			return {
+				title,
+				platform: this.platform,
+				url,
+				orga: "Udemy",
+				brief,
 				programme,
 				duration,
+				animateur,
+				languages,
 			};
 		} catch (error) {
 			console.error("Error scraping course data:", error);
@@ -148,9 +192,13 @@ class Udemy extends Scraper {
 	}
 }
 
+// module.exports = Udemy;
+
 let udemy = new Udemy();
 udemy
 	.scrape(
-		"https://www.udemy.com/course/machinelearning/?couponCode=LETSLEARNNOW"
+		"https://www.udemy.com/course/online-resources-for-exploring-old-railways-in-the-uk/"
 	)
 	.then(console.log);
+// "https://www.udemy.com/course/the-lean-startup-debunking-myths-of-entrepreneurship/"
+// .then(console.log);
