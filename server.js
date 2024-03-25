@@ -49,7 +49,9 @@ app.post("/api/scrape/coursera", async (req, res) => {
 		const courseraScraper = new Coursera(url);
 		const data = await courseraScraper.scrape();
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res
+				.status(404)
+				.json({ message: "Course data not found", error });
 		}
 		res.json(data);
 	} catch (error) {
@@ -107,7 +109,9 @@ app.post("/api/scrape/funmooc", async (req, res) => {
 		const funMoocScraper = new FunMooc();
 		const data = await funMoocScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res
+				.status(404)
+				.json({ message: "Course data not found", error });
 		}
 		res.json(data);
 	} catch (error) {
@@ -165,7 +169,9 @@ app.post("/api/scrape/edx", async (req, res) => {
 		const edxScraper = new Edx();
 		const data = await edxScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res
+				.status(404)
+				.json({ message: "Course data not found", error });
 		}
 		res.json(data);
 	} catch (error) {

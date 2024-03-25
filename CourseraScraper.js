@@ -141,7 +141,7 @@ class Coursera extends Scraper {
 			let languages = [];
 			let langs = await this.extractText(page, selector);
 			langs = langs
-				.split(",")
+				?.split(",")
 				.map((lang) => lang.trim().split(" ")[0])
 				.join(", ");
 			if (langs.includes("English")) {
@@ -259,7 +259,9 @@ class Coursera extends Scraper {
 							.replace(/\n/g, "")
 					);
 			}
-			var module = moduleTitle.trim().concat(" :   " + moduleDesc);
+			var module = moduleDesc
+				? moduleTitle.trim().concat(" :   " + moduleDesc)
+				: moduleTitle.trim();
 			programme.push(module);
 
 			counter++;
