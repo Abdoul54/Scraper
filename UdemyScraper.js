@@ -136,7 +136,7 @@ class Udemy extends Scraper {
 			]);
 			const showMoreButton = await page
 				.waitForSelector('xpath///button[@data-purpose="show-more"]', {
-					timeout: 10000,
+					timeout: 15000,
 				})
 				.catch(() => null);
 			if (showMoreButton) {
