@@ -4,19 +4,21 @@
 
 These are the platform can scrape at the moment:
 
-- **Coursera**
+-   **Coursera**
 
-- **OpenClassRooms**
+-   **OpenClassRooms**
 
-- **Fun-Mooc**
+-   **Fun-Mooc**
 
-- **Edraak**
+-   **Edraak**
 
-- **EDX**
+-   **EDX**
 
-- **Unow**
+-   **Unow**
 
-- **FutureLearn**
+-   **FutureLearn**
+
+-   **Udemy**
 
 ## Endpoint:
 
