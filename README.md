@@ -20,6 +20,8 @@ These are the platform can scrape at the moment:
 
 -   **Udemy**
 
+-   **PluralSight**
+
 ## Endpoint:
 
 ```curl

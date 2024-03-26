@@ -7,6 +7,7 @@ const Edx = require("./EdxScraper");
 const Unow = require("./UnowScraper");
 const FutureLearn = require("./FutureLearnScraper");
 const Udemy = require("./UdemyScraper");
+const PluralSight = require("./PluralSightScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
@@ -275,6 +276,25 @@ app.post("/api/scrape/udemy", async (req, res) => {
 		res.json(data);
 	} catch (error) {
 		res.status(500).json({ message: "Failed to scrape Udemy data", error });
+	}
+});
+
+app.post("/api/scrape/pluralsight", async (req, res) => {
+	try {
+		const { url } = req.body;
+		if (!url) {
+			return res
+				.status(400)
+				.json({ message: "URL parameter is required" });
+		}
+		const pluralsightScraper = new PluralSight();
+		const data = await pluralsightScraper.scrape(url);
+		if (!data) {
+			return res.status(404).json({ message: "Course data not found" });
+		}
+		res.json(data);
+	} catch (error) {
+		res.status(500).json({ message: "Failed to data", error });
 	}
 });
 
