@@ -29,7 +29,7 @@ class Scraper {
 		try {
 			const browser = await puppeteer.launch({
 				args: [
-					`--user-agent=${userAgent}`,
+					// `--user-agent=${userAgent}`,
 					"--no-sandbox",
 					"--disable-setuid-sandbox",
 					"--single-process",
