@@ -49,9 +49,10 @@ app.post("/api/scrape/coursera", async (req, res) => {
 		const courseraScraper = new Coursera(url);
 		const data = await courseraScraper.scrape();
 		if (!data) {
-			return res
-				.status(404)
-				.json({ message: "Course data not found", error });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -80,7 +81,10 @@ app.post("/api/scrape/openclassrooms", async (req, res) => {
 		const openClassroomsScraper = new OpenClassrooms();
 		const data = await openClassroomsScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -109,9 +113,10 @@ app.post("/api/scrape/funmooc", async (req, res) => {
 		const funMoocScraper = new FunMooc();
 		const data = await funMoocScraper.scrape(url);
 		if (!data) {
-			return res
-				.status(404)
-				.json({ message: "Course data not found", error });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -140,7 +145,10 @@ app.post("/api/scrape/edraak", async (req, res) => {
 		const edraakScraper = new Edraak();
 		const data = await edraakScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -169,9 +177,10 @@ app.post("/api/scrape/edx", async (req, res) => {
 		const edxScraper = new Edx();
 		const data = await edxScraper.scrape(url);
 		if (!data) {
-			return res
-				.status(404)
-				.json({ message: "Course data not found", error });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -197,7 +206,10 @@ app.post("/api/scrape/unow", async (req, res) => {
 		const unowScraper = new Unow();
 		const data = await unowScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -223,7 +235,10 @@ app.post("/api/scrape/futurelearn", async (req, res) => {
 		const futureLearnScraper = new FutureLearn();
 		const data = await futureLearnScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
@@ -234,6 +249,13 @@ app.post("/api/scrape/futurelearn", async (req, res) => {
 	}
 });
 
+/**
+ * Route to scrape Udemy data
+ * @param {string} url - The URL of the Udemy course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
 app.post("/api/scrape/udemy", async (req, res) => {
 	try {
 		const { url } = req.body;
@@ -245,7 +267,10 @@ app.post("/api/scrape/udemy", async (req, res) => {
 		const udemyScraper = new Udemy();
 		const data = await udemyScraper.scrape(url);
 		if (!data) {
-			return res.status(404).json({ message: "Course data not found" });
+			return res.status(404).json({
+				message:
+					"Course data not found, please check if the course is free or url is correct",
+			});
 		}
 		res.json(data);
 	} catch (error) {
