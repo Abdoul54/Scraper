@@ -26,18 +26,22 @@ class Scraper {
 	 * @memberof Scraper
 	 */
 	async launchBrowser(url) {
-		const browser = await puppeteer.launch({
-			args: [
-				`--user-agent=${userAgent}`,
-				"--no-sandbox",
-				"--disable-setuid-sandbox",
-				"--single-process",
-				"--no-zygote",
-			],
-		});
-		const page = await browser.newPage();
-		await page.goto(url);
-		return { browser, page };
+		try {
+			const browser = await puppeteer.launch({
+				args: [
+					`--user-agent=${userAgent}`,
+					"--no-sandbox",
+					"--disable-setuid-sandbox",
+					"--single-process",
+					"--no-zygote",
+				],
+			});
+			const page = await browser.newPage();
+			await page.goto(url);
+			return { browser, page };
+		} catch (error) {
+			console.error("Error launching browser:", error);
+		}
 	}
 
 	/**
