@@ -40,7 +40,7 @@ class Scraper {
 			await page.goto(url);
 			return { browser, page };
 		} catch (error) {
-			console.error("Error launching browser:", error);
+			console.log("Error launching browser:", error);
 		}
 	}
 
