@@ -108,7 +108,7 @@ class Udemy extends Scraper {
 	 */
 	async extractProgramme(page) {
 		try {
-			const programme = [];
+			const programme = {};
 			const headers = await super.extractManyWithMutation(
 				page,
 				'//span[@class="section--section-title--svpHP"]'
@@ -118,7 +118,9 @@ class Udemy extends Scraper {
 					page,
 					`//div[@data-purpose="course-curriculum"]/div[2]/div[${i}]/div[2]/div/ul/li/div/div/div/div/span`
 				);
-				programme[headers[i - 1]] = subheaders.map((sub) => sub.trim());
+				const sectionTitle = headers[i - 1];
+				const sectionItems = subheaders.map((sub) => sub.trim());
+				programme[sectionTitle] = sectionItems;
 			}
 			return programme;
 		} catch (error) {
