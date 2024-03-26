@@ -91,7 +91,7 @@ class PluralSight extends Scraper {
 	 */
 	async scrape(url) {
 		try {
-			var { browser, page } = await super.launchBrowser(url);
+			var { browser, page } = await super.launchBrowser(url, true);
 
 			const [title, brief, animateur, programme, duration] =
 				await Promise.all([
