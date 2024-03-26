@@ -153,44 +153,6 @@ class OpenClassrooms extends Scraper {
 	}
 
 	/**
-	 * Extract text content after a mutation
-	 * @param {object} page - The Puppeteer page
-	 * @param {string} xpath - The XPath of the element to extract
-	 * @returns {string} - The extracted text content
-	 * @method
-	 * @memberof OpenClassrooms
-	 * @async
-	 */
-	async extractTextPostMutation(page, xpath) {
-		return await page.evaluate(async (xpath) => {
-			const waitForElement = (xpath) => {
-				return new Promise((resolve) => {
-					const observer = new MutationObserver((mutations) => {
-						const element = document.evaluate(
-							xpath,
-							document,
-							null,
-							XPathResult.FIRST_ORDERED_NODE_TYPE,
-							null
-						).singleNodeValue;
-						if (element) {
-							observer.disconnect();
-							resolve(element);
-						}
-					});
-					observer.observe(document, {
-						childList: true,
-						subtree: true,
-					});
-				});
-			};
-
-			const element = await waitForElement(xpath);
-			return element ? element.textContent.trim() : null;
-		}, xpath);
-	}
-
-	/**
 	 * Extract the sibling before a list
 	 * @param {object} page - The Puppeteer page
 	 * @param {string} xpath - The XPath of the list
@@ -311,7 +273,7 @@ class OpenClassrooms extends Scraper {
 							  )
 					),
 					this.extractProgramme(page),
-					this.extractTextPostMutation(page, this.selectors.name),
+					super.extractTextPostMutation(page, this.selectors.name),
 				]);
 				animateur = [];
 			} else {

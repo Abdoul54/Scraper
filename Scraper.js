@@ -132,6 +132,45 @@ class Scraper {
 	}
 
 	/**
+	 * Extract text from an element after a mutation
+	 * @param {object} page - The page object
+	 * @param {string} xpath - The XPath of the element
+	 * @returns {string} - The text content of the element
+	 * @async
+	 * @method
+	 * @memberof Scraper
+	 * @throws {object} - The error message
+	 */
+	async extractTextPostMutation(page, xpath) {
+		return await page.evaluate(async (xpath) => {
+			const waitForElement = (xpath) => {
+				return new Promise((resolve) => {
+					const observer = new MutationObserver((mutations) => {
+						const element = document.evaluate(
+							xpath,
+							document,
+							null,
+							XPathResult.FIRST_ORDERED_NODE_TYPE,
+							null
+						).singleNodeValue;
+						if (element) {
+							observer.disconnect();
+							resolve(element);
+						}
+					});
+					observer.observe(document, {
+						childList: true,
+						subtree: true,
+					});
+				});
+			};
+
+			const element = await waitForElement(xpath);
+			return element ? element.textContent.trim() : null;
+		}, xpath);
+	}
+
+	/**
 	 * Extract an attribute from multiple elements
 	 * @param {object} page - The page object
 	 * @param {string} xpath - The XPath of the elements

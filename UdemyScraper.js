@@ -19,7 +19,8 @@ class Udemy extends Scraper {
 			brief: '//div[@data-purpose="safely-set-inner-html:description:description"]/p',
 			programme: '//span[@class="ud-accordion-panel-title"]/span[1]',
 			animateur: '//span[@class="instructor-links--names--fJWai"]/a',
-			duration: '//span[@class="ud-accordion-panel-title"]/span[2]/span',
+			duration:
+				'//span[@class="curriculum--content-length--V3vIz"]/span/span',
 			languages: '//div[@data-purpose="lead-course-locale"]/text()',
 		};
 	}
@@ -31,28 +32,24 @@ class Udemy extends Scraper {
 	 * @memberof Udemy
 	 * @method
 	 */
-	convertToMinutes(timeStr) {
-		const [hours, minutes] = timeStr.split("hr ");
-		return parseInt(hours) * 60 + parseInt(minutes || 0);
-	}
+	convertToHHMM(timeStr) {
+		const parts = timeStr.split(" ");
 
-	/**
-	 * Calculate the total duration
-	 * @param {array} timeArray - The durations to calculate
-	 * @returns {string} - The total duration
-	 * @memberof Udemy
-	 * @method
-	 */
-	totalDurationAndConvertToHHMM(timeIntervals) {
-		const totalMinutes = timeIntervals.reduce(
-			(total, time) => total + this.convertToMinutes(time),
-			0
-		);
-		const hours = Math.floor(totalMinutes / 60);
-		const minutes = totalMinutes % 60;
-		return `${hours.toString().padStart(2, "0")}:${minutes
-			.toString()
-			.padStart(2, "0")}`;
+		let hours = 0;
+		let minutes = 0;
+
+		parts.forEach((part) => {
+			if (part.includes("h")) {
+				hours = parseInt(part);
+			} else if (part.includes("m")) {
+				minutes = parseInt(part);
+			}
+		});
+
+		const formattedHours = hours.toString().padStart(2, "0");
+		const formattedMinutes = minutes.toString().padStart(2, "0");
+
+		return `${formattedHours}:${formattedMinutes}`;
 	}
 
 	/**
@@ -111,27 +108,17 @@ class Udemy extends Scraper {
 	 */
 	async extractProgramme(page) {
 		try {
+			const programme = [];
 			const headers = await super.extractManyWithMutation(
 				page,
 				'//span[@class="section--section-title--svpHP"]'
 			);
-			const programme = [];
 			for (let i = 1; i <= headers.length; i++) {
-				const element = await super
-					.extractMany(
-						page,
-						`//div[@data-purpose="course-curriculum"]/div[2]/div[${i}]/div[2]/div/ul/li/div/div/div/div/span`
-					)
-					.then(
-						(subheader) =>
-							`<ul>${subheader.map(
-								(sub) => `<li>${sub.trim()}</li>`
-							)}</ul>`
-					)
-					.then((subheader) => subheader.replace(/,/g, ""));
-				programme.push(
-					`<div><h3>${headers[i - 1]}</h3>${element}</div>`
+				const subheaders = await super.extractMany(
+					page,
+					`//div[@data-purpose="course-curriculum"]/div[2]/div[${i}]/div[2]/div/ul/li/div/div/div/div/span`
 				);
+				programme[headers[i - 1]] = subheaders.map((sub) => sub.trim());
 			}
 			return programme;
 		} catch (error) {
@@ -155,8 +142,8 @@ class Udemy extends Scraper {
 
 			const [title, brief, programme, animateur, duration, languages] =
 				await Promise.all([
-					await super.extractText(page, this.selectors.name),
-					await super
+					super.extractText(page, this.selectors.name),
+					super
 						.extractMany(page, this.selectors.brief)
 						.then((paragraphs) => {
 							let index = paragraphs.findIndex((paragraph) =>
@@ -169,14 +156,16 @@ class Udemy extends Scraper {
 						.then((paragraphs) =>
 							this.cleanText(paragraphs.join("\n"))
 						),
-					await this.extractProgramme(page),
-					await super.extractMany(page, this.selectors.animateur),
-					await super
-						.extractMany(page, this.selectors.duration)
-						.then((durations) =>
-							this.totalDurationAndConvertToHHMM(durations)
-						),
-					await this.extractLanguages(page),
+					this.extractProgramme(page),
+					super.extractMany(page, this.selectors.animateur),
+					super
+						.extractTextPostMutation(page, this.selectors.duration)
+						.then((duration) => {
+							return this.convertToHHMM(
+								duration.replace(/\u00A0/g, " ")
+							);
+						}),
+					this.extractLanguages(page),
 				]);
 
 			return {
@@ -200,5 +189,4 @@ class Udemy extends Scraper {
 		}
 	}
 }
-
 module.exports = Udemy;

@@ -1,326 +1,178 @@
 const Scraper = require("./Scraper");
 
 /**
- * Coursera scraper
+ * Udemy scraper
  * @extends Scraper
  * @class
  */
-class Coursera extends Scraper {
+class Udemy extends Scraper {
 	/**
-	 * Create a Coursera scraper
+	 * Create a Udemy scraper
 	 * @constructor
-	 * @param {string} url - The URL of the Coursera course
-	 * @memberof Coursera
+	 * @memberof Udemy
 	 * @method
 	 */
-	constructor(url) {
-		super("Coursera");
-		this.url = url;
+	constructor() {
+		super("Udemy");
 		this.selectors = {
-			name: "//h1[@data-e2e='hero-title']",
-			orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
-			//*[@id='modules']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span
-			brief: "//*[@id='courses']/div/div/div/div[1]/div/div/div/div[1]/div/div/div/div/p[1]/span/span",
-			moduleTitles:
-				"//div[@data-testid='accordion-item']/div/div/div/div[1]/div/h3/a",
-			moduleDescs:
-				"/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div",
-			animateur: '//a[@data-track-component="hero_instructor"]/span',
+			name: '//h1[@data-purpose="lead-title"]',
+			brief: '//div[@data-purpose="safely-set-inner-html:description:description"]/p',
+			programme: '//span[@class="ud-accordion-panel-title"]/span[1]',
+			animateur: '//span[@class="instructor-links--names--fJWai"]/a',
 			duration:
-				'//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
-			languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
+				'//span[@class="curriculum--content-length--V3vIz"]/span/span',
+			languages: '//div[@data-purpose="lead-course-locale"]/text()',
 		};
-		this.type = this.checkType(url);
 	}
 
 	/**
-	 * Switch the selectors to the modules page
-	 * @param {object} selectors - The selectors to switch
-	 * @memberof Coursera
+	 * Convert durations to HH:MM format
+	 * @param {array} durations - The durations to convert
+	 * @returns {array} - The durations in HH:MM format
+	 * @memberof Udemy
 	 * @method
 	 */
-	switchToModules = (selectors) => {
-		selectors.orga = selectors.orga.replace("courses", "modules");
-		selectors.brief =
-			"//*[@id='modules']/div/div/div/div[1]/div/div/div/div[1]/div/p[1]";
-		selectors.programme =
-			"//*[@class='cds-AccordionRoot-container cds-AccordionRoot-silent']/div[1]/button/span/span/span/h3";
-		selectors.duration =
-			"//*[@id='rendered-content']/div/main/section[2]/div/div/div[2]/div/div/section/div[2]/div[2]/div[1]";
-		selectors.moduleTitles =
-			"//div[@data-testid='accordion-item']/div/div/div/div/button/span/span/span/h3";
-		selectors.moduleDescs = "/div/div/div/div/div/div/div/div/div/p";
-	};
+	convertToHHMM(timeStr) {
+		const parts = timeStr.split(" ");
 
-	/**
-	 * Check the type of the URL
-	 * @param {string} url - The URL of the Coursera course
-	 * @returns {string} - The type of the URL
-	 * @memberof Coursera
-	 * @method
-	 */
-	checkType(url) {
-		let result = url.includes("specializations")
-			? "specialization"
-			: url.includes("learn")
-			? "module"
-			: "certificate";
-		if (result === "module") {
-			this.switchToModules(this.selectors);
-		}
-		return result;
+		let hours = 0;
+		let minutes = 0;
+
+		parts.forEach((part) => {
+			if (part.includes("h")) {
+				hours = parseInt(part);
+			} else if (part.includes("m")) {
+				minutes = parseInt(part);
+			}
+		});
+
+		const formattedHours = hours.toString().padStart(2, "0");
+		const formattedMinutes = minutes.toString().padStart(2, "0");
+
+		return `${formattedHours}:${formattedMinutes}`;
 	}
 
 	/**
-	 * Convert hours to HH:MM format
-	 * @param {number} hours - The hours to convert
-	 * @returns {string} - The hours in HH:MM format
-	 * @memberof Coursera
+	 * Clean the text
+	 * @param {string} text - The text to clean
+	 * @returns {string} - The cleaned text
+	 * @memberof Udemy
 	 * @method
 	 */
-	convertHoursToHHMM(hours) {
-		var integerHours = Math.floor(hours);
-		var decimalHours = hours - integerHours;
-
-		var minutes = Math.round(decimalHours * 60);
-
-		var formattedHours = ("0" + integerHours).slice(-2);
-		var formattedMinutes = ("0" + minutes).slice(-2);
-
-		return formattedHours + ":" + formattedMinutes;
+	cleanText(text) {
+		text = text.replace(/[^\x20-\x7E]/g, "");
+		text = text
+			.replace(/&quot;/g, '"')
+			.replace(/&apos;/g, "'")
+			.replace(/&amp;/g, "&")
+			.replace(/&lt;/g, "<")
+			.replace(/&gt;/g, ">");
+		text = text.replace(/\s+/g, " ").trim();
+		return text;
 	}
 
 	/**
-	 * Convert months and hours per week to HH:MM format
-	 * @param {number} months - The number of months
-	 * @param {number} hoursPerWeek - The number of hours per week
-	 * @returns {string} - The duration in HH:MM format
-	 * @memberof Coursera
-	 * @method
-	 */
-	convertMonthsAndHoursToHHMM(months, hoursPerWeek) {
-		var totalHours = months * 4 * hoursPerWeek;
-
-		var formattedHours = ("0" + Math.floor(totalHours)).slice(-2);
-		var formattedMinutes = "00";
-
-		return formattedHours + ":" + formattedMinutes;
-	}
-
-	/**
-	 * Convert the duration to HH:MM format
-	 * @param {string} duration - The duration to convert
-	 * @returns {string} - The duration in HH:MM format
-	 * @memberof Coursera
-	 * @method
-	 */
-	convertDurationToHHMM(duration) {
-		if (duration.includes("months")) {
-			var [months, hoursPerWeek] = duration.match(/\d+/g);
-			return this.convertMonthsAndHoursToHHMM(
-				parseInt(months),
-				parseInt(hoursPerWeek)
-			);
-		} else {
-			var hours = parseFloat(duration);
-			return this.convertHoursToHHMM(hours);
-		}
-	}
-
-	/**
-	 * Extract the languages from the course page
-	 * @param {object} page - The Puppeteer page
-	 * @param {string} selector - The selector for the languages
-	 * @returns {array} - The languages of the course
-	 * @memberof Coursera
+	 * Extract the languages
+	 * @param {object} page - The page object
+	 * @returns {array} - The languages
+	 * @memberof Udemy
 	 * @method
 	 * @async
 	 */
-	async extractLanguages(page, selector) {
-		try {
-			let languages = [];
-			let langs = await this.extractText(page, selector);
-			langs = langs
-				?.split(",")
-				.map((lang) => lang.trim().split(" ")[0])
-				.join(", ");
-			if (langs.includes("English")) {
-				languages.push("english");
-			}
-			if (langs.includes("Français")) {
-				languages.push("french");
-			}
-			if (langs.includes("العربية")) {
-				languages.push("arabic");
-			}
-			return languages;
-		} catch (error) {
-			console.error("Error extracting languages:", error);
-			throw error;
+	async extractLanguages(page) {
+		const languages = [];
+		const langs = await super
+			.extractMany(page, this.selectors.languages)
+			.then((langs) => langs.map((lang) => lang.toLowerCase()));
+		if (langs.length === 0) return null;
+		if (langs.includes("english")) {
+			languages.push("english");
 		}
-	}
-
-	/**
-	 * Extract the animateur from the course page
-	 * @param {object} page - The Puppeteer page
-	 * @param {string} xpath - The XPath selector for the animateur
-	 * @returns {array} - The animateur of the course
-	 * @memberof Coursera
-	 * @method
-	 * @async
-	 */
-	async extractAnimateur(page, xpath) {
-		// Implementation of extractAnimateur function
-		return await page.evaluate((xpath) => {
-			const iterator = document.evaluate(
-				xpath,
-				document,
-				null,
-				XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-				null
-			);
-			let element = iterator.iterateNext();
-			const texts = [];
-			while (element) {
-				if (!texts.includes(element.textContent.trim())) {
-					texts.push(element.textContent.trim());
-				}
-				element = iterator.iterateNext();
-			}
-			return [...new Set(texts)];
-		}, xpath);
-	}
-
-	/**
-	 * Extract the duration from the course page
-	 * @param {object} page - The Puppeteer page
-	 * @returns {array} - The duration of the course
-	 * @memberof Coursera
-	 * @method
-	 * @async
-	 */
-	async extractDuration(page) {
-		const words = ["hours", "days", "weeks", "months"];
-		const elementHandle = await page.$$(
-			"xpath///div[@class='cds-119 cds-Typography-base css-h1jogs cds-121']"
-		);
-		let data = [];
-
-		for (const element of elementHandle) {
-			const text = await page.evaluate((el) => el.textContent, element);
-			if (words.some((word) => text.includes(word))) {
-				data.push(text);
-			}
+		if (langs.includes("french")) {
+			languages.push("french");
 		}
-		return [...new Set(data)];
+		if (langs.includes("arabic")) {
+			languages.push("arabic");
+		}
+		return languages;
 	}
 
 	/**
-	 * Extract the programme from the course page
-	 * @param {object} page - The Puppeteer page
-	 * @returns {array} - The programme of the course
-	 * @memberof Coursera
+	 * Extract the programme
+	 * @param {object} page - The page object
+	 * @returns {array} - The programme
+	 * @memberof Udemy
 	 * @method
 	 * @async
+	 * @throws {object} - The error message
 	 */
 	async extractProgramme(page) {
-		const programme = [];
-		const elementHandle = await page.$$(
-			"xpath/" + this.selectors.moduleTitles
-		);
-		let counter = 1;
-		for (const element of elementHandle) {
-			const moduleTitle = await page.evaluate(
-				(el) => el.textContent,
-				element
+		try {
+			const programme = [];
+			const headers = await super.extractManyWithMutation(
+				page,
+				'//span[@class="section--section-title--svpHP"]'
 			);
-			let moduleDesc = await super
-				.extractMany(
+			for (let i = 1; i <= headers.length; i++) {
+				const subheaders = await super.extractMany(
 					page,
-					`//div[@data-testid="accordion-item"][${counter}]${this.selectors.moduleDescs}`
-				)
-				.then((moduleDesc) =>
-					moduleDesc
-						.join(". ")
-						.replace(/\.\./g, ".")
-						.replace(/\n/g, "")
+					`//div[@data-purpose="course-curriculum"]/div[2]/div[${i}]/div[2]/div/ul/li/div/div/div/div/span`
 				);
-
-			if (moduleDesc.length === 0) {
-				moduleDesc = await super
-					.extractMany(
-						page,
-						`//div[@data-testid="accordion-item"][${counter}]/div/div/div/div[2]/div/div/div/div/div/div[1]/ul/li`
-					)
-					.then((moduleDesc) =>
-						moduleDesc
-							.join(". ")
-							.replace(/\.\./g, ".")
-							.replace(/\n/g, "")
-					);
+				programme[headers[i - 1]] = subheaders.map((sub) => sub.trim());
 			}
-			var module = moduleDesc
-				? moduleTitle.trim().concat(" :   " + moduleDesc)
-				: moduleTitle.trim();
-			programme.push(module);
-
-			counter++;
+			return programme;
+		} catch (error) {
+			console.error("Error scraping course content:", error);
+			return null;
 		}
-		return programme;
 	}
 
 	/**
-	 * Scrape the course data
+	 * Scrape the Udemy course data
+	 * @param {string} url - The URL of the Udemy course
 	 * @returns {object} - The scraped course data
-	 * @memberof Coursera
+	 * @memberof Udemy
 	 * @method
 	 * @async
+	 * @throws {object} - The error message
 	 */
-	async scrape() {
+	async scrape(url) {
 		try {
-			let languages;
-			if (!(await this.checkURLExists(this.url))) {
-				throw new Error("URL does not exist");
-			}
-			var { browser, page } = await super.launchBrowser(this.url);
+			var { browser, page } = await super.launchBrowser(url);
 
-			if (
-				await super.checkElementExistence(
-					page,
-					"xpath///div[2]/div/button/span/span"
-				)
-			) {
-				await page.click("xpath///div[2]/div/button/span/span");
-				languages = await this.extractLanguages(
-					page,
-					this.selectors.languages
-				);
-			}
-			const [title, orga, brief, programme, duration, animateur] =
+			const [title, brief, programme, animateur, duration, languages] =
 				await Promise.all([
 					super.extractText(page, this.selectors.name),
-					super.extractText(page, this.selectors.orga),
 					super
 						.extractMany(page, this.selectors.brief)
-						.then((brief) =>
-							brief.map((el) => el.trim()).join(" ")
+						.then((paragraphs) => {
+							let index = paragraphs.findIndex((paragraph) =>
+								paragraph.endsWith(":")
+							);
+							return index !== -1
+								? paragraphs.slice(0, index)
+								: paragraphs;
+						})
+						.then((paragraphs) =>
+							this.cleanText(paragraphs.join("\n"))
 						),
 					this.extractProgramme(page),
-					this.extractDuration(page, this.selectors.duration).then(
-						(duration) => this.convertDurationToHHMM(...duration)
-					),
+					super.extractMany(page, this.selectors.animateur),
 					super
-						.extractMany(page, this.selectors.animateur)
-						.then((animateur) =>
-							[...new Set(animateur)].slice(0, 3)
-						),
+						.extractTextPostMutation(page, this.selectors.duration)
+						.then((duration) => {
+							return this.convertToHHMM(
+								duration.replace(/\u00A0/g, " ")
+							);
+						}),
+					this.extractLanguages(page),
 				]);
 
 			return {
 				title,
 				platform: this.platform,
-				url: this.url,
-				orga,
+				url,
+				orga: "Udemy",
 				brief,
 				programme,
 				duration,
@@ -338,9 +190,8 @@ class Coursera extends Scraper {
 	}
 }
 
-let coursera = new Coursera(
-	"https://www.coursera.org/learn/comp-thinking-javascript-course-3"
-);
-coursera.scrape().then(console.log).catch(console.error);
-
-// https://www.coursera.org/learn/comp-thinking-javascript-course-3
+let udemy = new Udemy();
+udemy
+	// .scrape("https://www.udemy.com/course/web-design-secrets/")
+	.scrape("https://www.udemy.com/course/build-your-first-website-in-1-week/")
+	.then(console.log);
