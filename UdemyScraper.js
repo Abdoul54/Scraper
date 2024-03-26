@@ -128,6 +128,29 @@ class Udemy extends Scraper {
 	}
 
 	/**
+	 * Check if the course is paid
+	 * @param {object} page - The page object
+	 * @returns {boolean} - The course payment status
+	 * @memberof Udemy
+	 * @method
+	 * @async
+	 * @throws {object} - The error message
+	 */
+	async checkIsPaid(page) {
+		try {
+			const isPaid = await super.extractAttribute(
+				page,
+				'//div[@class="ud-component--course-landing-page--course-landing-page"]',
+				"data-component-props"
+			);
+			return JSON.parse(isPaid).serverSideProps.course.isPaid;
+		} catch (error) {
+			console.error("Error scraping course content:", error);
+			return null;
+		}
+	}
+
+	/**
 	 * Scrape the Udemy course data
 	 * @param {string} url - The URL of the Udemy course
 	 * @returns {object} - The scraped course data
@@ -140,6 +163,9 @@ class Udemy extends Scraper {
 		try {
 			var { browser, page } = await super.launchBrowser(url);
 
+			if (await this.checkIsPaid(page)) {
+				throw new Error("Course is paid");
+			}
 			const [title, brief, programme, animateur, duration, languages] =
 				await Promise.all([
 					super.extractText(page, this.selectors.name),

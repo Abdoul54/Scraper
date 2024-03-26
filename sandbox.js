@@ -71,6 +71,19 @@ class Udemy extends Scraper {
 		return text;
 	}
 
+	async checkIsPaid(page) {
+		try {
+			const isPaid = await super.extractAttribute(
+				page,
+				'//div[@class="ud-component--course-landing-page--course-landing-page"]',
+				"data-component-props"
+			);
+			return JSON.parse(isPaid).serverSideProps.course.isPaid;
+		} catch (error) {
+			console.error("Error scraping course content:", error);
+			return null;
+		}
+	}
 	/**
 	 * Extract the languages
 	 * @param {object} page - The page object
@@ -139,46 +152,10 @@ class Udemy extends Scraper {
 	async scrape(url) {
 		try {
 			var { browser, page } = await super.launchBrowser(url);
-
-			const [title, brief, programme, animateur, duration, languages] =
-				await Promise.all([
-					super.extractText(page, this.selectors.name),
-					super
-						.extractMany(page, this.selectors.brief)
-						.then((paragraphs) => {
-							let index = paragraphs.findIndex((paragraph) =>
-								paragraph.endsWith(":")
-							);
-							return index !== -1
-								? paragraphs.slice(0, index)
-								: paragraphs;
-						})
-						.then((paragraphs) =>
-							this.cleanText(paragraphs.join("\n"))
-						),
-					this.extractProgramme(page),
-					super.extractMany(page, this.selectors.animateur),
-					super
-						.extractTextPostMutation(page, this.selectors.duration)
-						.then((duration) => {
-							return this.convertToHHMM(
-								duration.replace(/\u00A0/g, " ")
-							);
-						}),
-					this.extractLanguages(page),
-				]);
-
-			return {
-				title,
-				platform: this.platform,
-				url,
-				orga: "Udemy",
-				brief,
-				programme,
-				duration,
-				animateur,
-				languages,
-			};
+			if (await this.checkIsPaid(page)) {
+				throw new Error("Course is paid");
+			}
+			return "scraping ...";
 		} catch (error) {
 			console.error("Error scraping course data:", error);
 			return null;
@@ -193,5 +170,8 @@ class Udemy extends Scraper {
 let udemy = new Udemy();
 udemy
 	// .scrape("https://www.udemy.com/course/web-design-secrets/")
-	.scrape("https://www.udemy.com/course/build-your-first-website-in-1-week/")
+	// .scrape("https://www.udemy.com/course/build-your-first-website-in-1-week/")
+	.scrape(
+		"https://www.udemy.com/course/machinelearning/?couponCode=LETSLEARNNOW"
+	)
 	.then(console.log);
