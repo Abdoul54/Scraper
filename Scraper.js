@@ -25,16 +25,19 @@ class Scraper {
 	 * @method
 	 * @memberof Scraper
 	 */
-	async launchBrowser(url) {
+	async launchBrowser(url, userAgent = false) {
 		try {
+			const args = [
+				"--no-sandbox",
+				"--disable-setuid-sandbox",
+				"--single-process",
+				"--no-zygote",
+			];
+			if (userAgent) {
+				args.push(`--user-agent=${userAgent}`);
+			}
 			const browser = await puppeteer.launch({
-				args: [
-					// `--user-agent=${userAgent}`,
-					"--no-sandbox",
-					"--disable-setuid-sandbox",
-					"--single-process",
-					"--no-zygote",
-				],
+				args,
 			});
 			const page = await browser.newPage();
 			await page.goto(url);

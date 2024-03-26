@@ -163,7 +163,7 @@ class Udemy extends Scraper {
 	 */
 	async scrape(url) {
 		try {
-			var { browser, page } = await super.launchBrowser(url);
+			var { browser, page } = await super.launchBrowser(url, true);
 
 			if (await this.checkIsPaid(page)) {
 				throw new Error("Course is paid");
