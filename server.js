@@ -8,6 +8,7 @@ const Unow = require("./UnowScraper");
 const FutureLearn = require("./FutureLearnScraper");
 const Udemy = require("./UdemyScraper");
 const PluralSight = require("./PluralSightScraper");
+const SkillShop = require("./SkillShopScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
@@ -279,6 +280,13 @@ app.post("/api/scrape/udemy", async (req, res) => {
 	}
 });
 
+/**
+ * Route to scrape PluralSight data
+ * @param {string} url - The URL of the PluralSight course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
 app.post("/api/scrape/pluralsight", async (req, res) => {
 	try {
 		const { url } = req.body;
@@ -289,6 +297,32 @@ app.post("/api/scrape/pluralsight", async (req, res) => {
 		}
 		const pluralsightScraper = new PluralSight();
 		const data = await pluralsightScraper.scrape(url);
+		if (!data) {
+			return res.status(404).json({ message: "Course data not found" });
+		}
+		res.json(data);
+	} catch (error) {
+		res.status(500).json({ message: "Failed to data", error });
+	}
+});
+
+/**
+ * Route to scrape SkillShop data
+ * @param {string} url - The URL of the SkillShop course
+ * @returns {object} - The scraped course data
+ * @throws {object} - The error message
+ * @async
+ */
+app.post("/api/scrape/skillshop", async (req, res) => {
+	try {
+		const { url } = req.body;
+		if (!url) {
+			return res
+				.status(400)
+				.json({ message: "URL parameter is required" });
+		}
+		const skillshopScraper = new SkillShop();
+		const data = await skillshopScraper.scrape(url);
 		if (!data) {
 			return res.status(404).json({ message: "Course data not found" });
 		}

@@ -12,7 +12,7 @@ class SkillShop extends Scraper {
 		super("SkillShop");
 		this.selectors = {
 			name: '//div[@class="course__header"]/div/h1',
-			brief: '//div[@class="course__description postcontent"]', //* Tricky
+			brief: '//div[@class="course__description postcontent"]',
 			programme:
 				'//h2[@class="u-headingsection--activity activitysection__name"]/text()[1]',
 			animateur: "", //* not provided
@@ -119,16 +119,4 @@ class SkillShop extends Scraper {
 	}
 }
 
-let ss = new SkillShop();
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/17374-learn-the-fundamentals-of-google-ads-search"
-// ).then(console.log);
-ss.scrape(
-	"https://skillshop.exceedlms.com/student/path/34900-boostez-vos-revenus-publicitaires-avec-google-ad-manager"
-).then(console.log);
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/185016-favorisez-la-creativite-en-renforcant-l-engagement-des-eleves"
-// ).then(console.log);
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/325799-achieve-your-goals-with-performance-max"
-// ).then(console.log);
+module.exports = SkillShop;
