@@ -40,6 +40,7 @@ class Scraper {
 				args,
 			});
 			const page = await browser.newPage();
+			await page.setDefaultNavigationTimeout(60000);
 			await page.goto(url);
 			return { browser, page };
 		} catch (error) {
