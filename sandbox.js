@@ -1,22 +1,23 @@
 const Scraper = require("./Scraper");
 
-class PluralSight extends Scraper {
+class MyMooc extends Scraper {
 	/**
-	 * Create a PluralSight scraper
+	 * Create a MyMooc scraper
 	 * @constructor
-	 * @memberof PluralSight
+	 * @memberof MyMooc
 	 * @method
 	 */
 	constructor() {
-		super("PluralSight");
+		super("MyMooc");
 		this.selectors = {
-			name: '//div[@id="course-page-hero"]/h1',
-			brief: '//div[@class="course-content-about"]/p',
-			programme: '//span[@class="ud-accordion-panel-title"]/span[1]',
-			animateur: '//div[@class="author-name"]',
-			duration:
-				'//aside[@class="course-content-right show-for-large-up"]/div[2]/div[4]/div[2]/text()',
-			languages: '//div[@data-purpose="lead-course-locale"]/text()',
+			name: '//h1[@class="mymoocapp-1vak8w3 ejjtsdg6"]',
+			brief: '//div[@class="read-more-wrapper"]', //* Tricky
+			programme: '//div[@id="ResourceDetails"]/div[1]//div/ul/li',
+			animateur:
+				'//div[@data-testid="styled#rich-editorial##body"]/p/strong/text()',
+			duration: '//div[@data-testid="Card#Pill#Minutes"]/span',
+			languages:
+				'//div[@class="noSpacingTop mymoocapp-rpnrxd ejjtsdg5"]/div[2]/div[2]',
 		};
 	}
 
@@ -25,7 +26,7 @@ class PluralSight extends Scraper {
 	 * @param {object} page - The page object
 	 * @returns {object} - The programme content
 	 * @throws {object} - The error message
-	 * @memberof PluralSight
+	 * @memberof MyMooc
 	 * @method
 	 * @async
 	 */
@@ -57,7 +58,7 @@ class PluralSight extends Scraper {
 	 * Convert durations to HH:MM format
 	 * @param {array} durations - The durations to convert
 	 * @returns {array} - The durations in HH:MM format
-	 * @memberof PluralSight
+	 * @memberof MyMooc
 	 * @method
 	 */
 	convertToHHMM(timeStr) {
@@ -81,10 +82,10 @@ class PluralSight extends Scraper {
 	}
 
 	/**
-	 * Scrape the Udemy course data
-	 * @param {string} url - The URL of the Udemy course
+	 * Scrape the MyMooc course data
+	 * @param {string} url - The URL of the MyMooc course
 	 * @returns {object} - The scraped course data
-	 * @memberof PluralSight
+	 * @memberof MyMooc
 	 * @method
 	 * @async
 	 * @throws {object} - The error message
@@ -92,8 +93,14 @@ class PluralSight extends Scraper {
 	async scrape(url) {
 		try {
 			var { browser, page } = await super.launchBrowser(url, true);
-			console.log({ browser, page });
 
+			const title = await super.extractText(page, this.selectors.name);
+			const brief = await super.extractText(page, this.selectors.brief);
+			const animateur = await super.extractMany(
+				page,
+				this.selectors.animateur
+			);
+			console.log({ animateur });
 			// const [title, brief, animateur, programme, duration] =
 			// 	await Promise.all([
 			// 		super.extractText(page, this.selectors.name),
@@ -109,7 +116,7 @@ class PluralSight extends Scraper {
 			// 	title,
 			// 	platform: this.platform,
 			// 	url,
-			// 	orga: "PluralSight",
+			// 	orga: "MyMooc",
 			// 	brief,
 			// 	programme,
 			// 	duration,
@@ -127,23 +134,5 @@ class PluralSight extends Scraper {
 	}
 }
 
-let PS = new PluralSight();
-PS.scrape("https://www.pluralsight.com/courses/build-first-dashboard-splunk");
-// .then(console.log)
-// .catch(console.error);
-
-// const axios = require("axios");
-
-// const url = "https://scraper-hbqd.onrender.com/api/scrape/pluralsight"; // replace with your actual server URL
-// const data = {
-// 	url: "https://www.pluralsight.com/courses/build-first-dashboard-splunk", // replace with the actual URL you want to scrape
-// };
-
-// axios
-// 	.post(url, data)
-// 	.then((response) => {
-// 		console.log(response.data);
-// 	})
-// 	.catch((error) => {
-// 		console.error(error);
-// 	});
+let myMooc = new MyMooc();
+myMooc.scrape("https://www.my-mooc.com/en/mooc/sciwrite/");
