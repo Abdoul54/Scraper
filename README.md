@@ -22,6 +22,8 @@ These are the platform can scrape at the moment:
 
 9. **PluralSight**
 
+10. **Google SkillShop**
+
 ## Endpoint:
 
 ```curl
