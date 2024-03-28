@@ -23,7 +23,11 @@ class FutureLearn extends Scraper {
 				'//section[@id="section-syllabus"]//div/ul/li/div[2]/div/div/div/div/div/div/div/h3',
 			altProgramme: '//section[@id="section-topics"]/div/div[2]/ul/li',
 			duration: '//div[@id="sticky-banner-start"]/ul/li[1]/div[2]/span',
+			altDuration:
+				'//div[@id="section-page-header"]/div[3]/ul/li[1]/div[2]/span',
 			pace: '//div[@id="sticky-banner-start"]/ul/li[3]/div[2]/span',
+			altPace:
+				'//div[@id="section-page-header"]/div[3]/ul/li[3]/div[2]/span',
 			animateur: '//section[@id="section-educators"]//div/h3/a/span',
 			languages: "",
 		};
@@ -92,13 +96,32 @@ class FutureLearn extends Scraper {
 						),
 					super
 						.extractText(page, this.selectors.duration)
-						.then((duration) => duration.split(" ")[0]),
+						.then((duration) =>
+							duration !== null
+								? duration.split(" ")[0]
+								: super
+										.extractText(
+											page,
+											this.selectors.altDuration
+										)
+										.then(
+											(duration) => duration.split(" ")[0]
+										)
+						),
 					super
 						.extractText(page, this.selectors.pace)
-						.then((pace) => (pace = pace.split(" ")[0])),
+						.then((pace) =>
+							pace
+								? pace.split(" ")[0]
+								: super
+										.extractText(
+											page,
+											this.selectors.altPace
+										)
+										.then((pace) => pace.split(" ")[0])
+						),
 					super.extractMany(page, this.selectors.animateur),
 				]);
-			await browser.close();
 			return {
 				title,
 				orga,
@@ -115,6 +138,8 @@ class FutureLearn extends Scraper {
 		} catch (error) {
 			console.error("Error scraping course data:", error);
 			return null;
+		} finally {
+			await browser.close();
 		}
 	}
 }

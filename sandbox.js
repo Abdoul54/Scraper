@@ -1,61 +1,44 @@
-const langdetect = require("langdetect");
 const Scraper = require("./Scraper");
+const langdetect = require("langdetect");
 
-class SkillShop extends Scraper {
+/**
+ * FutureLearn scraper
+ * @extends Scraper
+ * @class
+ */
+class FutureLearn extends Scraper {
 	/**
-	 * Create a SkillShop scraper
+	 * Create a FutureLearn scraper
 	 * @constructor
-	 * @memberof SkillShop
+	 * @memberof FutureLearn
 	 * @method
 	 */
 	constructor() {
-		super("SkillShop");
+		super("FutureLearn");
 		this.selectors = {
-			name: '//div[@class="course__header"]/div/h1',
-			brief: '//div[@class="course__description postcontent"]', //* Tricky
+			name: '//div[@id="section-page-header"]//div/h1',
+			orga: '//section[@id="section-creators"]/div//div/h2',
+			brief: '//section[@id="section-overview"]/div/div/div',
 			programme:
-				'//h2[@class="u-headingsection--activity activitysection__name"]/text()[1]',
-			animateur: "", //* not provided
-			duration:
-				'//ul[@class="activityheading__meta activitymeta activitymeta--heading"]/li[3]/text()[2]',
-			languages: "", //* detect from brief
+				'//section[@id="section-syllabus"]//div/ul/li/div[2]/div/div/div/div/div/div/div/h3',
+			altProgramme: '//section[@id="section-topics"]/div/div[2]/ul/li',
+			duration: '//div[@id="sticky-banner-start"]/ul/li[1]/div[2]/span',
+			altDuration:
+				'//div[@id="section-page-header"]/div[3]/ul/li[1]/div[2]/span',
+			pace: '//div[@id="sticky-banner-start"]/ul/li[3]/div[2]/span',
+			altPace:
+				'//div[@id="section-page-header"]/div[3]/ul/li[3]/div[2]/span',
+			animateur: '//section[@id="section-educators"]//div/h3/a/span',
+			languages: "",
 		};
-	}
-
-	/**
-	 * Convert durations to HH:MM format
-	 * @param {array} durations - The durations to convert
-	 * @returns {array} - The durations in HH:MM format
-	 * @memberof SkillShop
-	 * @method
-	 */
-	convertToHHMM(input) {
-		if (input.match(/mins/)) {
-			input = input.replace(/mins/, "");
-			input = input.length === 1 ? `00:0${input}` : `00:${input}`;
-			return input;
-		} else {
-			input = input.replace(/hrs/, "");
-			let hours, minutes;
-			if (input.includes(".")) {
-				hours = Math.floor(parseFloat(input));
-				minutes = Math.round((parseFloat(input) - hours) * 60);
-			} else {
-				hours = parseInt(input);
-				minutes = 0;
-			}
-			hours = hours < 10 ? `0${hours}` : hours;
-			minutes = minutes < 10 ? `0${minutes}` : minutes;
-			input = `${hours}:${minutes}`;
-			return input;
-		}
+		this.type = "course";
 	}
 
 	/**
 	 * Detect the language of the text
-	 * @param {string} text - The text to detect the language of
+	 * @param {string} text - The text to detect the language of it
 	 * @returns {array} - The detected languages
-	 * @memberof SkillShop
+	 * @memberof EDX
 	 * @method
 	 */
 	detectLanguage(text) {
@@ -72,63 +55,104 @@ class SkillShop extends Scraper {
 	}
 
 	/**
-	 * Scrape the SkillShop course data
-	 * @param {string} url - The URL of the SkillShop course
-	 * @returns {object} - The scraped course data
-	 * @memberof SkillShop
+	 * Extract languages from the page
+	 * @param {Object} page - The page object
+	 * @returns {Array} The languages
+	 * @memberof FutureLearn
 	 * @method
 	 * @async
-	 * @throws {object} - The error message
 	 */
 	async scrape(url) {
 		try {
-			var { browser, page } = await super.launchBrowser(url, true);
-
-			const [title, brief, programme, duration] = await Promise.all([
-				super.extractText(page, this.selectors.name),
-				super
-					.extractMany(page, this.selectors.brief)
-					.then((text) => text.join("").replace(/\n/g, "")),
-				super.extractMany(page, this.selectors.programme),
-				super
-					.extractText(page, this.selectors.duration)
-					.then((time) => this.convertToHHMM(time))
-					.catch(() => null),
-			]);
-			const animateur = [];
-			const languages = this.detectLanguage(brief);
+			if (!(await super.checkURLExists(url))) {
+				console.error("URL '" + url + "' does not exist");
+				return;
+			}
+			var { browser, page } = await super.launchBrowser(url);
+			const [title, orga, brief, programme, duration, pace, animateur] =
+				await Promise.all([
+					super.extractText(page, this.selectors.name),
+					super.extractText(page, this.selectors.orga),
+					super
+						.extractMany(page, this.selectors.brief)
+						.then((briefs) =>
+							briefs.join("").replace(/\n/g, " ").trim()
+						),
+					super
+						.extractMany(page, this.selectors.programme)
+						.then((programme) =>
+							programme.length > 0
+								? programme.map((prog) => prog.trim())
+								: super
+										.extractMany(
+											page,
+											this.selectors.altProgramme
+										)
+										.then((altProgramme) =>
+											altProgramme.map((prog) =>
+												prog.trim()
+											)
+										)
+						),
+					super
+						.extractText(page, this.selectors.duration)
+						.then((duration) =>
+							duration !== null
+								? duration.split(" ")[0]
+								: super
+										.extractText(
+											page,
+											this.selectors.altDuration
+										)
+										.then(
+											(duration) => duration.split(" ")[0]
+										)
+						),
+					super
+						.extractText(page, this.selectors.pace)
+						.then((pace) =>
+							pace
+								? pace.split(" ")[0]
+								: super
+										.extractText(
+											page,
+											this.selectors.altPace
+										)
+										.then((pace) => pace.split(" ")[0])
+						),
+					super.extractMany(page, this.selectors.animateur),
+				]);
 			return {
 				title,
-				platform: this.platform,
+				orga,
 				url,
-				orga: "SkillShop",
 				brief,
 				programme,
-				duration,
+				duration:
+					(pace * duration).length == 1
+						? +`0${pace * duration}:00`
+						: `${pace * duration}:00`,
 				animateur,
-				languages,
+				languages: this.detectLanguage(brief),
 			};
 		} catch (error) {
 			console.error("Error scraping course data:", error);
 			return null;
 		} finally {
-			if (browser) {
-				super.closeBrowser(browser);
-			}
+			await browser.close();
 		}
 	}
 }
-
-let ss = new SkillShop();
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/17374-learn-the-fundamentals-of-google-ads-search"
-// ).then(console.log);
-ss.scrape(
-	"https://skillshop.exceedlms.com/student/path/34900-boostez-vos-revenus-publicitaires-avec-google-ad-manager"
-).then(console.log);
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/185016-favorisez-la-creativite-en-renforcant-l-engagement-des-eleves"
-// ).then(console.log);
-// ss.scrape(
-// 	"https://skillshop.exceedlms.com/student/path/325799-achieve-your-goals-with-performance-max"
-// ).then(console.log);
+let futureLearn = new FutureLearn();
+// futureLearn
+// 	.scrape(
+// 		"https://www.futurelearn.com/courses/digital-marketing-analytics-measurement-advanced-web-analytics"
+// 	)
+// 	.then(console.log)
+// 	.catch(console.error);
+futureLearn
+	.scrape(
+		"https://www.futurelearn.com/courses/food-safety-personal-presentation-and-hygiene-in-a-professional-kitchen"
+	)
+	.then(console.log)
+	.catch(console.error);
