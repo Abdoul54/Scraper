@@ -30,8 +30,8 @@ class SkillShop extends Scraper {
 	 * @method
 	 */
 	convertToHHMM(input) {
-		if (input.match(/min(s)?/)) {
-			input = input.replace(/min(s)?/, "");
+		if (input.match(/m(s)?|min(s)?/)) {
+			input = input.replace(/m|min(s)?/, "");
 			let minutes = parseInt(input);
 			minutes = minutes < 10 ? `00:0${minutes}` : `00:${minutes}`;
 			return minutes;
