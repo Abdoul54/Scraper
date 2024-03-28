@@ -99,6 +99,7 @@ class SkillShop extends Scraper {
 			const languages = brief
 				? this.detectLanguage(brief)
 				: this.detectLanguage(title);
+
 			return {
 				title,
 				platform: this.platform,
@@ -124,6 +125,6 @@ class SkillShop extends Scraper {
 let scraper = new SkillShop();
 scraper
 	.scrape(
-		"https://skillshop.exceedlms.com/student/path/13996-youtube-music-certification"
+		"https://skillshop.exceedlms.com/student/path/841974-start-your-own-business"
 	)
 	.then(console.log);

@@ -28,7 +28,6 @@ app.use((req, res, next) => {
 	console.log("Request Parameters:", req.params);
 	console.log("Query Parameters:", req.query);
 	console.log("Request Body:", req.body);
-	console.log("Response Status Code:", res.statusCode);
 	next();
 });
 
@@ -329,6 +328,23 @@ app.post("/api/scrape/skillshop", async (req, res) => {
 		res.json(data);
 	} catch (error) {
 		res.status(500).json({ message: "Failed to data", error });
+	}
+});
+
+//! ********************** TESTING ROUTE *********************** */
+
+app.post("/api/test", async (req, res) => {
+	try {
+		const { url } = req.body;
+		if (!url) {
+			return res
+				.status(400)
+				.json({ message: "URL parameter is required" });
+		}
+		const gs = new Skill
+		res.json({ message: "Test route is working" });
+	} catch (error) {
+		res.status(500).json({ message: "Test route is not working" });
 	}
 });
 
