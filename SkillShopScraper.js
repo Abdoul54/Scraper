@@ -96,7 +96,10 @@ class SkillShop extends Scraper {
 					.catch(() => null),
 			]);
 			const animateur = [];
-			const languages = this.detectLanguage(brief);
+			const languages = brief
+				? this.detectLanguage(brief)
+				: this.detectLanguage(title);
+
 			return {
 				title,
 				platform: this.platform,
