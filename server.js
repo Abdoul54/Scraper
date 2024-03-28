@@ -331,23 +331,6 @@ app.post("/api/scrape/skillshop", async (req, res) => {
 	}
 });
 
-//! ********************** TESTING ROUTE *********************** */
-
-app.post("/api/test", async (req, res) => {
-	try {
-		const { url } = req.body;
-		if (!url) {
-			return res
-				.status(400)
-				.json({ message: "URL parameter is required" });
-		}
-		const gs = new Skill
-		res.json({ message: "Test route is working" });
-	} catch (error) {
-		res.status(500).json({ message: "Test route is not working" });
-	}
-});
-
 //! ********************** HEALTH CHECK ROUTES *********************** */
 
 /**
