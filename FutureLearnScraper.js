@@ -129,8 +129,8 @@ class FutureLearn extends Scraper {
 				brief,
 				programme,
 				duration:
-					(pace * duration).length == 1
-						? +`0${pace * duration}:00`
+					new String(pace * duration).length === 1
+						? `0${pace * duration}:00`
 						: `${pace * duration}:00`,
 				animateur,
 				languages: this.detectLanguage(brief),

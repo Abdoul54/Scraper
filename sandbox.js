@@ -129,8 +129,8 @@ class FutureLearn extends Scraper {
 				brief,
 				programme,
 				duration:
-					(pace * duration).length == 1
-						? +`0${pace * duration}:00`
+					new String(pace * duration).length === 1
+						? `0${pace * duration}:00`
 						: `${pace * duration}:00`,
 				animateur,
 				languages: this.detectLanguage(brief),
@@ -143,16 +143,10 @@ class FutureLearn extends Scraper {
 		}
 	}
 }
+
 let futureLearn = new FutureLearn();
-// futureLearn
-// 	.scrape(
-// 		"https://www.futurelearn.com/courses/digital-marketing-analytics-measurement-advanced-web-analytics"
-// 	)
-// 	.then(console.log)
-// 	.catch(console.error);
 futureLearn
 	.scrape(
-		"https://www.futurelearn.com/courses/food-safety-personal-presentation-and-hygiene-in-a-professional-kitchen"
+		"https://www.futurelearn.com/courses/harnessing-ai-in-marketing-and-communication"
 	)
-	.then(console.log)
-	.catch(console.error);
+	.then(console.log);
