@@ -28,7 +28,6 @@ app.use((req, res, next) => {
 	console.log("Request Parameters:", req.params);
 	console.log("Query Parameters:", req.query);
 	console.log("Request Body:", req.body);
-	console.log("Response Status Code:", res.statusCode);
 	next();
 });
 

@@ -30,10 +30,11 @@ class SkillShop extends Scraper {
 	 * @method
 	 */
 	convertToHHMM(input) {
-		if (input.match(/mins/)) {
-			input = input.replace(/mins/, "");
-			input = input.length === 1 ? `00:0${input}` : `00:${input}`;
-			return input;
+		if (input.match(/min(s)?/)) {
+			input = input.replace(/min(s)?/, "");
+			let minutes = parseInt(input);
+			minutes = minutes < 10 ? `00:0${minutes}` : `00:${minutes}`;
+			return minutes;
 		} else {
 			input = input.replace(/hrs/, "");
 			let hours, minutes;
@@ -84,32 +85,11 @@ class SkillShop extends Scraper {
 		try {
 			var { browser, page } = await super.launchBrowser(url, true);
 
-			const [title, brief, programme, duration] = await Promise.all([
-				super.extractText(page, this.selectors.name),
-				super
-					.extractMany(page, this.selectors.brief)
-					.then((text) => text.join("").replace(/\n/g, "")),
-				super.extractMany(page, this.selectors.programme),
-				super
-					.extractText(page, this.selectors.duration)
-					.then((time) => this.convertToHHMM(time))
-					.catch(() => null),
-			]);
-			const animateur = [];
-			const languages = brief
-				? this.detectLanguage(brief)
-				: this.detectLanguage(title);
-			return {
-				title,
-				platform: this.platform,
-				url,
-				orga: "SkillShop",
-				brief,
-				programme,
-				duration,
-				animateur,
-				languages,
-			};
+			const duration = await super
+				.extractText(page, this.selectors.duration)
+				.then((time) => this.convertToHHMM(time))
+				.catch(() => null);
+			return { duration };
 		} catch (error) {
 			console.error("Error scraping course data:", error);
 			return null;
@@ -124,6 +104,6 @@ class SkillShop extends Scraper {
 let scraper = new SkillShop();
 scraper
 	.scrape(
-		"https://skillshop.exceedlms.com/student/path/13996-youtube-music-certification"
+		"https://skillshop.exceedlms.com/student/path/841974-start-your-own-business"
 	)
 	.then(console.log);
