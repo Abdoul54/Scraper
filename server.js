@@ -1,5 +1,5 @@
 const express = require("express");
-const Coursera = require("./Scrapers /CourseraScraper");
+const Coursera = require("./Scrapers/CourseraScraper");
 const OpenClassrooms = require("./Scrapers/OpenClassroomsScraper");
 const FunMooc = require("./Scrapers/FunMoocScraper");
 const Edraak = require("./Scrapers/EdraakScraper");
