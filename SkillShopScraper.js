@@ -93,7 +93,10 @@ class SkillShop extends Scraper {
 				super.extractMany(page, this.selectors.programme),
 				super
 					.extractText(page, this.selectors.duration)
-					.then((time) => this.convertToHHMM(time))
+					.then((time) => {
+						console.log("Duration =>", duration);
+						return this.convertToHHMM(time);
+					})
 					.catch(() => null),
 			]);
 			const animateur = [];
