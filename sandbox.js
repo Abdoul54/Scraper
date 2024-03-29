@@ -1,208 +1,43 @@
-const langdetect = require("langdetect");
-const Scraper = require("./Scrapers/Scraper");
-
-class OpenSap extends Scraper {
-  /**
-   * Create a OpenSap scraper
-   * @constructor
-   * @memberof OpenSap
-   * @method
-   */
-  constructor() {
-    super("OpenSap");
-    this.selectors = {
-      name: '//div[@class="header-title"]',
-      brief: '//div[@class="RenderedMarkdown"]/p[1]', //* Should be limited
-      programme: '//div[@class="RenderedMarkdown"]/p[4]',
-      animateur: '//div[@id="teachers"]//div/h4/a/text()', //* Should be limited
-      duration: "", //* not provided
-      languages: '//span[@class="shortinfo"][2]/span[2]', //* Shoulf be cleaned
-    };
-  }
-  //*[@id="egc2"]/div/div[2]/div[1]/div[1]/div/ul/li[2]
-  //*[@id="s4h36"]/div/div[2]/div[1]/div[1]/div/ul[2]/li[2]
-  /**
-   * Convert durations to HH:MM format
-   * @param {array} durations - The durations to convert
-   * @returns {array} - The durations in HH:MM format
-   * @memberof OpenSap
-   * @method
-   */
-  convertToHHMM(input) {
-    if (input.match(/m(s)?|min(s)?/)) {
-      input = input.replace(/m|min(s)?/, "");
-      let minutes = parseInt(input);
-      minutes = minutes < 10 ? `00:0${minutes}` : `00:${minutes}`;
-      return minutes;
-    } else {
-      input = input.replace(/hrs/, "");
-      let hours, minutes;
-      if (input.includes(".")) {
-        hours = Math.floor(parseFloat(input));
-        minutes = Math.round((parseFloat(input) - hours) * 60);
-      } else {
-        hours = parseInt(input);
-        minutes = 0;
-      }
-      hours = hours < 10 ? `0${hours}` : hours;
-      minutes = minutes < 10 ? `0${minutes}` : minutes;
-      input = `${hours}:${minutes}`;
-      return input;
-    }
-  }
-
-  /**
-   * Extract the programme content
-   * @param {object} page - The page object
-   * @returns {object} - The programme content
-   * @throws {object} - The error message
-   * @memberof PluralSight
-   * @method
-   * @async
-   */
-  async extractProgrammeAndDuration(page) {
-    try {
-      const info = await page.$eval(
-        "xpath///div[@class='RenderedMarkdown']",
-        (el) => {
-          return el.innerText.trim().split("\n");
-        }
-      );
-      const programme = this.extractCourseDetails(info);
-      const duration = this.extractCourseDuration(info);
-      return { programme, duration };
-    } catch (error) {
-      console.error("Error scraping course content:", error);
-      return null;
-    }
-  }
-
-  async extractLanguages(page) {
-    const languages = [];
-    const langs = await super
-      .extractMany(page, this.selectors.languages)
-      .then((langs) => langs.map((lang) => lang.toLowerCase()));
-    if (langs.length === 0) return null;
-    if (langs.some((element) => element.includes("english"))) {
-      languages.push("english");
-    }
-    if (langs.some((element) => element.includes("french"))) {
-      languages.push("french");
-    }
-    if (langs.some((element) => element.includes("arabic"))) {
-      languages.push("arabic");
-    }
-    return languages;
-  }
-
-  calculateCourseDuration(dur, pace) {
-    if (dur.match(/hour(s)?/) && dur.match(/week(s)?/)) {
-      let weeks = dur.match(/\d+(?= week)/)[0];
-      let hours = dur.match(/\d+(?= hours)/)[0];
-      var duration = weeks * hours;
-      return new String(duration).length === 1
-        ? `0${duration}:00`
-        : `${duration}:00`;
-    } else {
-      let weeks = dur.match(/\d+(?= week)/)[0];
-      let hours = pace.match(/\d+(?= hours)/)[0];
-      var duration = weeks * hours;
-      return new String(duration).length === 1
-        ? `0${duration}:00`
-        : `${duration}:00`;
-    }
-  }
-
-  extractCourseDuration(courseInfo) {
-    const startIndex = courseInfo.indexOf("Course Characteristics");
-
-    if (startIndex !== -1) {
-      let endIndex = startIndex + 1;
-      while (
-        endIndex < courseInfo.length &&
-        courseInfo[endIndex] !== "Course Content"
-      ) {
-        endIndex++;
-      }
-
-      const courseDetails = courseInfo.slice(startIndex + 1, endIndex);
-      const durationIndex = courseDetails.findIndex((element) =>
-        element.includes("Duration:")
-      );
-      const effortIndex = courseDetails.findIndex((element) =>
-        element.includes("Effort:")
-      );
-
-      const duration =
-        durationIndex !== -1
-          ? courseDetails[durationIndex].split(":")[1].trim()
-          : null;
-      const effort =
-        effortIndex !== -1
-          ? courseDetails[effortIndex].split(":")[1].trim()
-          : null;
-
-      return this.calculateCourseDuration(duration, effort);
-    } else {
-      return '"Course Characteristics" section not found';
-    }
-  }
-
-  extractCourseDetails(info) {
-    const contentStartIndex = info.indexOf("Course Content");
-    const contentEndIndex = info.indexOf("Target Audience");
-    const courseContent = info.slice(contentStartIndex + 1, contentEndIndex);
-    const filteredContent = courseContent.filter((item) => item.trim() !== "");
-    return filteredContent;
-  }
-
-  /**
-   * Scrape the OpenSap course data
-   * @param {string} url - The URL of the OpenSap course
-   * @returns {object} - The scraped course data
-   * @memberof OpenSap
-   * @method
-   * @async
-   * @throws {object} - The error message
-   */
-  async scrape(url) {
-    try {
-      var { browser, page } = await super.launchBrowser(url, true);
-
-      const [title, brief, animateur, languages, { programme, duration }] =
-        await Promise.all([
-          super.extractText(page, this.selectors.name),
-          super.extractText(page, this.selectors.brief),
-          super
-            .extractMany(page, this.selectors.animateur)
-            .then((anim) => anim.filter((a, index) => index < 3)),
-          this.extractLanguages(page, this.selectors.languages),
-          this.extractProgrammeAndDuration(page),
-        ]);
-
-      return {
-        title,
-        platform: this.platform,
-        url,
-        orga: "OpenSap",
-        brief,
-        programme,
-        duration,
-        animateur,
-        languages,
-      };
-    } catch (error) {
-      console.error("Error scraping course data:", error);
-      return null;
-    } finally {
-      if (browser) {
-        super.closeBrowser(browser);
-      }
-    }
-  }
-}
-
-let openSapScraper = new OpenSap();
-
-// openSapScraper.scrape("https://open.sap.com/courses/s4h36").then(console.log);
-openSapScraper.scrape("https://open.sap.com/courses/egc2").then(console.log);
+[
+  "https://app.didask.com/article1/courses/les-cles-du-leadership-positif-GlEA",
+  "https://knowledge.em-lyon.com/mooc-qe-programme/",
+  "https://www.objectif2030.org/mooc/devdur/",
+  "https://www.pok.polimi.it/courses/course-v1:Polimi+ASPenergy101+2020_M5/about",
+  "https://www.prorefei.org/",
+  "https://stepik.org/course/502/promo",
+  "https://www.canvas.net/browse/osu/global-one-health/courses/media-writing-and-editing",
+  "https://www.fun-mooc.fr/courses/course-v1:MinesTelecom+04014+session05/about",
+  "https://www.ergocampus.com/a/course/11802/description",
+  "https://atelier-rgpd.cnil.fr/",
+  "https://catalogue.edulib.org/fr/cours/MEES-COMPENUM1/",
+  "https://www.unow.fr/formation-mooc-le-digital-learning-pour-les-responsables-formation-mooc-dlr",
+  "https://www.classcentral.com/course/independent-intro-to-r-for-journalists-how-to-find-great-stories-in-data-11701",
+  "https://www.uclg.org/fr/media/nouvelles/cglu-lance-sa-premiere-formation-en-ligne-ouverte-toutes-sur-les-lle",
+  "https://platform.europeanmoocs.eu/course_from_abc_to_abseas_ocean_liter",
+  "https://www.edx.org/course/psychologie-de-la-negociation",
+  "https://mooc.innovation.ifp-school.com/Minisite/home/22186",
+  "https://mooc-francophone.com/cours/realisez-un-cours-en-ligne/",
+  "https://secnumacademie.gouv.fr/",
+  "https://openclassrooms.com/fr/courses/5164316-apprenez-a-travailler-en-equipe",
+  "https://www.futurelearn.com/courses/blockchain-energy-sector",
+  "http://mooc.uca.ma/detailCours.php?id=61",
+  "https://openeducation.blackboard.com/mooc-catalog/courseDetails/view?course_id=_279_1#",
+  "https://open.sap.com/courses/ogsd1",
+  "https://www.edraak.org/course/course-v1:Edraak+PS_SP+2018_SP/",
+  "https://www.rwaq.org/courses/legal-lifestyle",
+  "https://emlyonx.em-lyon.com/courses/course-v1:emlyonX+EML005+2020_S2/about",
+  "https://mooc.gestiondeprojet.pm/",
+  "https://learndigital.withgoogle.com/ateliersnumeriques/course/public-speaking",
+  "https://support.microsoft.com/fr-fr/office/formation-outlook-8a5b816d-9052-4190-a5eb-494512343cca?ui=fr-fr&rs=fr-fr&ad=fr",
+  "http://mooc.univ-msila.dz/cours/cours-2/moteur-a-combustion-interne/",
+  "https://www.sourcing-force.com/mooc-comment-construire-une-strategie-achat/",
+  "https://institutlean.com/?gclid=Cj0KCQjw5oiMBhDtARIsAJi0qk0INV5MwhwSrqqWbQ5xe0j3xXKeaSc-CRI_TwpuUZv5p2UuM-ITYGQaAlwhEALw_wcB",
+  "https://md-plateforme.com/e-learning/main/auth/inscription.php",
+  "https://www.udemy.com/course/formation-marketing-digital/",
+  "https://www.ulaval.ca/les-etudes/mooc-formation-en-ligne-ouverte-a-tous/developpement-durable-enjeux-et-trajectoires",
+  "https://www.my-mooc.com/fr/mooc/normes-internationales-du-travail-comment-s-en-servir/",
+  "https://www.youtube.com/playlist?list=PLzI6uqudyS8OOxKwhXL8vOR-wokZxSqc4",
+  "https://www.pluralsight.com/courses/swords-shovels-closing-loop?clickid=RQZ1ucXBxxyIUP90qtUy-RZNUkDzPv06wwD%3Ayk0&irgwc=1&mpid=259799&aid=7010a000001xAKZAA2&utm_medium=digital_affiliate&utm_campaign=259799&utm_source=impactradius",
+  "https://mooc.afpa.fr/courses/course-v1:afpa+MOOC_FLI_replay_2020+2020/about",
+  "https://www.coursera.org/learn/reputation-management-facebook-cambridge-analytica",
+];

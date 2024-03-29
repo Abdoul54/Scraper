@@ -24,6 +24,8 @@ These are the platform can scrape at the moment:
 
 10. **Google SkillShop**
 
+11. **OpenSAP**
+
 ## Endpoint:
 
 ```curl
