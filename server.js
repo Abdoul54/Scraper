@@ -1,20 +1,12 @@
 const express = require("express");
-const Coursera = require("./Scrapers/CourseraScraper");
-const OpenClassrooms = require("./Scrapers/OpenClassroomsScraper");
-const FunMooc = require("./Scrapers/FunMoocScraper");
-const Edraak = require("./Scrapers/EdraakScraper");
-const Edx = require("./Scrapers/EdxScraper");
-const Unow = require("./Scrapers/UnowScraper");
-const FutureLearn = require("./Scrapers/FutureLearnScraper");
-const Udemy = require("./Scrapers/UdemyScraper");
-const PluralSight = require("./Scrapers/PluralSightScraper");
-const SkillShop = require("./Scrapers/SkillShopScraper");
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
 
+// Middleware to parse JSON bodies
 app.use(express.json());
 
+// Middleware to log requests
 app.use((req, res, next) => {
   console.log("========================================");
   console.log("Request received");
@@ -32,277 +24,56 @@ app.use((req, res, next) => {
 });
 
 /**
- * Route to scrape Coursera data
- * @param {string} url - The URL of the Coursera course
+ * Route to scrape a course from a given URL
+ * @param {object} req - The request object
+ * @param {object} res - The response object
+ * @param {object} Scraper - The scraper object
  * @returns {object} - The scraped course data
  * @throws {object} - The error message
  * @async
  */
-app.post("/api/scrape/coursera", async (req, res) => {
+async function scrapeCourse(req, res, Scraper) {
   try {
     const { url } = req.body;
     if (!url) {
       return res.status(400).json({ message: "URL parameter is required" });
     }
 
-    const courseraScraper = new Coursera(url);
-    const data = await courseraScraper.scrape();
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to scrape Coursera data",
-      error,
-    });
-  }
-});
-
-/**
- * Route to scrape OpenClassrooms data
- * @param {string} url - The URL of the OpenClassrooms course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/openclassrooms", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const openClassroomsScraper = new OpenClassrooms();
-    const data = await openClassroomsScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to scrape OpenClassrooms data",
-      error,
-    });
-  }
-});
-
-/**
- * Route to scrape Fun-Mooc data
- * @param {string} url - The URL of the Fun-Mooc course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/funmooc", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const funMoocScraper = new FunMooc();
-    const data = await funMoocScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to scrape Fun-Mooc data",
-      error,
-    });
-  }
-});
-
-/**
- * Route to scrape Edraak data
- * @param {string} url - The URL of the Edraak course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/edraak", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const edraakScraper = new Edraak();
-    const data = await edraakScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to scrape Edraak data",
-      error,
-    });
-  }
-});
-
-/**
- * Route to scrape Edx data
- * @param {string} url - The URL of the Edx course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/edx", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const edxScraper = new Edx();
-    const data = await edxScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to scrape Edx data", error });
-  }
-});
-
-/**
- * Route to scrape Unow data
- * @param {string} url - The URL of the Unow course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/unow", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const unowScraper = new Unow();
-    const data = await unowScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to scrape Unow data", error });
-  }
-});
-
-/**
- * Route to scrape FutureLearn data
- * @param {string} url - The URL of the FutureLearn course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/futurelearn", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const futureLearnScraper = new FutureLearn();
-    const data = await futureLearnScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message: "Course data not found, please check if the url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to scrape FutureLearn data",
-      error,
-    });
-  }
-});
-
-/**
- * Route to scrape Udemy data
- * @param {string} url - The URL of the Udemy course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/udemy", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const udemyScraper = new Udemy();
-    const data = await udemyScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({
-        message:
-          "Course data not found, please check if the course is free or url is correct",
-      });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to scrape Udemy data", error });
-  }
-});
-
-/**
- * Route to scrape PluralSight data
- * @param {string} url - The URL of the PluralSight course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/pluralsight", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const pluralsightScraper = new PluralSight();
-    const data = await pluralsightScraper.scrape(url);
+    const scraper = new Scraper();
+    const data = await scraper.scrape(url);
     if (!data) {
       return res.status(404).json({ message: "Course data not found" });
     }
     res.json(data);
   } catch (error) {
-    res.status(500).json({ message: "Failed to data", error });
+    console.error("Error scraping course:", error);
+    res.status(500).json({ message: "Failed to scrape course data" });
   }
-});
+}
 
-/**
- * Route to scrape SkillShop data
- * @param {string} url - The URL of the SkillShop course
- * @returns {object} - The scraped course data
- * @throws {object} - The error message
- * @async
- */
-app.post("/api/scrape/skillshop", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ message: "URL parameter is required" });
-    }
-    const skillshopScraper = new SkillShop();
-    const data = await skillshopScraper.scrape(url);
-    if (!data) {
-      return res.status(404).json({ message: "Course data not found" });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to data", error });
-  }
-});
+// List of scrapers
+const scrapers = [
+  "Coursera",
+  "OpenClassrooms",
+  "FunMooc",
+  "Edraak",
+  "Edx",
+  "Unow",
+  "FutureLearn",
+  "Udemy",
+  "PluralSight",
+  "SkillShop",
+  "OpenSap",
+];
+
+// Dynamically create routes for each scraper
+for (const scraper of scrapers) {
+  const Scraper = require(`./Scrapers/${scraper}Scraper`);
+  app.post(
+    `/api/scrape/${scraper.toLowerCase()}`,
+    async (req, res) => await scrapeCourse(req, res, Scraper)
+  );
+}
 
 //! ********************** HEALTH CHECK ROUTES *********************** */
 

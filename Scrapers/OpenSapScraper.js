@@ -1,5 +1,4 @@
-const langdetect = require("langdetect");
-const Scraper = require("./Scrapers/Scraper");
+const Scraper = require("./Scraper");
 
 class OpenSap extends Scraper {
   /**
@@ -12,53 +11,22 @@ class OpenSap extends Scraper {
     super("OpenSap");
     this.selectors = {
       name: '//div[@class="header-title"]',
-      brief: '//div[@class="RenderedMarkdown"]/p[1]', //* Should be limited
+      brief: '//div[@class="RenderedMarkdown"]/p[1]',
       programme: '//div[@class="RenderedMarkdown"]/p[4]',
-      animateur: '//div[@id="teachers"]//div/h4/a/text()', //* Should be limited
-      duration: "", //* not provided
-      languages: '//span[@class="shortinfo"][2]/span[2]', //* Shoulf be cleaned
+      animateur: '//div[@id="teachers"]//div/h4/a/text()',
+      duration: "",
+      languages: '//span[@class="shortinfo"][2]/span[2]',
     };
-  }
-  //*[@id="egc2"]/div/div[2]/div[1]/div[1]/div/ul/li[2]
-  //*[@id="s4h36"]/div/div[2]/div[1]/div[1]/div/ul[2]/li[2]
-  /**
-   * Convert durations to HH:MM format
-   * @param {array} durations - The durations to convert
-   * @returns {array} - The durations in HH:MM format
-   * @memberof OpenSap
-   * @method
-   */
-  convertToHHMM(input) {
-    if (input.match(/m(s)?|min(s)?/)) {
-      input = input.replace(/m|min(s)?/, "");
-      let minutes = parseInt(input);
-      minutes = minutes < 10 ? `00:0${minutes}` : `00:${minutes}`;
-      return minutes;
-    } else {
-      input = input.replace(/hrs/, "");
-      let hours, minutes;
-      if (input.includes(".")) {
-        hours = Math.floor(parseFloat(input));
-        minutes = Math.round((parseFloat(input) - hours) * 60);
-      } else {
-        hours = parseInt(input);
-        minutes = 0;
-      }
-      hours = hours < 10 ? `0${hours}` : hours;
-      minutes = minutes < 10 ? `0${minutes}` : minutes;
-      input = `${hours}:${minutes}`;
-      return input;
-    }
   }
 
   /**
-   * Extract the programme content
+   * Extract the programme content and duration
    * @param {object} page - The page object
-   * @returns {object} - The programme content
-   * @throws {object} - The error message
-   * @memberof PluralSight
+   * @returns {object} - The programme content and duration
+   * @memberof OpenSap
    * @method
    * @async
+   * @throws {object} - The error message
    */
   async extractProgrammeAndDuration(page) {
     try {
@@ -77,6 +45,14 @@ class OpenSap extends Scraper {
     }
   }
 
+  /**
+   * Extract the languages
+   * @param {object} page - The page object
+   * @returns {array} - The languages
+   * @memberof OpenSap
+   * @method
+   * @async
+   */
   async extractLanguages(page) {
     const languages = [];
     const langs = await super
@@ -95,6 +71,14 @@ class OpenSap extends Scraper {
     return languages;
   }
 
+  /**
+   * Calculate the course duration
+   * @param {string} dur - The course duration
+   * @param {string} pace - The course pace
+   * @returns {string} - The course duration
+   * @memberof OpenSap
+   * @method
+   */
   calculateCourseDuration(dur, pace) {
     if (dur.match(/hour(s)?/) && dur.match(/week(s)?/)) {
       let weeks = dur.match(/\d+(?= week)/)[0];
@@ -113,6 +97,13 @@ class OpenSap extends Scraper {
     }
   }
 
+  /**
+   * Extract the course duration
+   * @param {array} courseInfo - The course information
+   * @returns {string} - The course duration
+   * @memberof OpenSap
+   * @method
+   */
   extractCourseDuration(courseInfo) {
     const startIndex = courseInfo.indexOf("Course Characteristics");
 
@@ -148,6 +139,13 @@ class OpenSap extends Scraper {
     }
   }
 
+  /**
+   * Extract the course details
+   * @param {array} info - The course information
+   * @returns {array} - The course details
+   * @memberof OpenSap
+   * @method
+   */
   extractCourseDetails(info) {
     const contentStartIndex = info.indexOf("Course Content");
     const contentEndIndex = info.indexOf("Target Audience");
@@ -202,7 +200,4 @@ class OpenSap extends Scraper {
   }
 }
 
-let openSapScraper = new OpenSap();
-
-// openSapScraper.scrape("https://open.sap.com/courses/s4h36").then(console.log);
-openSapScraper.scrape("https://open.sap.com/courses/egc2").then(console.log);
+module.exports = OpenSap;
