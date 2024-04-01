@@ -36,7 +36,7 @@ class OpenSap extends Scraper {
           return el.innerText.trim().split("\n");
         }
       );
-      const programme = this.extractCourseDetails(info);
+      const programme = await this.extractCourseDetails(info, page);
       const duration = this.extractCourseDuration(info);
       return { programme, duration };
     } catch (error) {
@@ -80,20 +80,28 @@ class OpenSap extends Scraper {
    * @method
    */
   calculateCourseDuration(dur, pace) {
-    if (dur.match(/hour(s)?/) && dur.match(/week(s)?/)) {
-      let weeks = dur.match(/\d+(?= week)/)[0];
-      let hours = dur.match(/\d+(?= hours)/)[0];
-      var duration = weeks * hours;
+    if (!dur && pace && pace.includes("hours") && pace.includes("total")) {
+      let hours = pace.match(/\d+(?= hours)/)[0];
+      var duration = hours;
       return new String(duration).length === 1
         ? `0${duration}:00`
         : `${duration}:00`;
     } else {
-      let weeks = dur.match(/\d+(?= week)/)[0];
-      let hours = pace.match(/\d+(?= hours)/)[0];
-      var duration = weeks * hours;
-      return new String(duration).length === 1
-        ? `0${duration}:00`
-        : `${duration}:00`;
+      if (dur.match(/hour(s)?/) && dur.match(/week(s)?/)) {
+        let weeks = dur.match(/\d+(?= week)/)[0];
+        let hours = dur.match(/\d+(?= hours)/)[0];
+        var duration = weeks * hours;
+        return new String(duration).length === 1
+          ? `0${duration}:00`
+          : `${duration}:00`;
+      } else {
+        let weeks = dur.match(/\d+(?= week)/)[0];
+        let hours = pace.match(/\d+(?= hours)/)[0];
+        var duration = weeks * hours;
+        return new String(duration).length === 1
+          ? `0${duration}:00`
+          : `${duration}:00`;
+      }
     }
   }
 
@@ -142,12 +150,22 @@ class OpenSap extends Scraper {
   /**
    * Extract the course details
    * @param {array} info - The course information
+   * @param {object} page - The page object
    * @returns {array} - The course details
    * @memberof OpenSap
    * @method
+   * @async
    */
-  extractCourseDetails(info) {
+  async extractCourseDetails(info, page) {
     const contentStartIndex = info.indexOf("Course Content");
+    if (contentStartIndex === -1) {
+      const courseContent = await page.$$eval(
+        "xpath///ul[@class='list-unstyled']/li/h4",
+        (items) =>
+          items.map((item) => item.textContent.trim().replace(/:$/, ""))
+      );
+      return courseContent;
+    }
     const contentEndIndex = info.indexOf("Target Audience");
     const courseContent = info.slice(contentStartIndex + 1, contentEndIndex);
     const filteredContent = courseContent.filter((item) => item.trim() !== "");
