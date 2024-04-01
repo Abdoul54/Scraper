@@ -64,6 +64,7 @@ const scrapers = [
   "PluralSight",
   "SkillShop",
   "OpenSap",
+  "ClassCentral",
 ];
 
 // Dynamically create routes for each scraper

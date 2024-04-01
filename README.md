@@ -26,6 +26,8 @@ These are the platform can scrape at the moment:
 
 11. **OpenSAP**
 
+12. **Class Central**
+
 ## Endpoint:
 
 ```curl
