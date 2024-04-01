@@ -14,7 +14,7 @@ class ClassCentral extends Scraper {
    * @method
    */
   constructor() {
-    super("ClassCentral");
+    super("Class Central");
     this.selectors = {
       name: '//h1[@class="head-2 medium-up-head-1 small-down-margin-bottom-xsmall"]',
       orga: '//a[@class="link-gray-underline text-1"]',
@@ -115,6 +115,8 @@ class ClassCentral extends Scraper {
 
       return {
         title,
+        platform: this.platform,
+        url,
         orga,
         brief,
         programme,
