@@ -11,11 +11,14 @@ class PluralSight extends Scraper {
 		super("PluralSight");
 		this.selectors = {
 			name: '//div[@id="course-page-hero"]/h1',
+			nameAlt: '//div[@id="course-hero"]/div/h1',
 			brief: '//div[@class="course-content-about"]/p',
+			briefAlt: '//div[@id="course-hero"]/div[@class="course-info"]/p',
 			programme: '//span[@class="ud-accordion-panel-title"]/span[1]',
 			animateur: '//div[@class="author-name"]',
-			duration:
-				'//aside[@class="course-content-right show-for-large-up"]/div[2]/div[4]/div[2]/text()',
+			animateurAlt: '//div[@class="course-authors-list"]/span/span',
+			duration: '//aside[@class="course-content-right show-for-large-up"]/div[2]/div[4]/div[2]/text()',
+			durationAlt: "//aside/div[2]/div[4]/div[2]/text()",
 			languages: '//div[@data-purpose="lead-course-locale"]/text()',
 		};
 	}
@@ -53,6 +56,33 @@ class PluralSight extends Scraper {
 		}
 	}
 
+	/**
+	 * Extract the alternative programme content
+	 * @param {object} page - The page object
+	 * @returns {object} - The programme content
+	 * @throws {object} - The error message
+	 * @memberof PluralSight
+	 * @method
+	 * @async
+	 */
+	async extractProgrammeAlt(page) {
+		const programme = {};
+		const headers = await super
+			.extractMany(page, '//div[@class="simple-accordion-item"]/h3/button')
+			.then((headers) =>
+				headers.map((header) => header.split("\n")[0].trim())
+			);
+		for (let i = 1; i <= headers.length; i++) {
+			const subheaders = await super.extractMany(
+				page,
+				`//div[@class="simple-accordion-item"][${i}]/div/ul/li`
+			);
+			const sectionTitle = headers[i - 1];
+			const sectionItems = subheaders.map((sub) => sub.split('|')[0].replace(/Lock icon\n\n\n\n/g, '').trim());
+			programme[sectionTitle] = sectionItems;
+		}
+		return programme;
+	}
 	/**
 	 * Convert durations to HH:MM format
 	 * @param {array} durations - The durations to convert
@@ -95,13 +125,16 @@ class PluralSight extends Scraper {
 
 			const [title, brief, animateur, programme, duration] =
 				await Promise.all([
-					super.extractText(page, this.selectors.name),
-					super.extractText(page, this.selectors.brief),
-					super.extractMany(page, this.selectors.animateur),
-					this.extractProgramme(page),
+					super.extractText(page, this.selectors.name).then((title) => title ? title : super.extractText(page, this.selectors.nameAlt)),
+					super.extractText(page, this.selectors.brief).then((brief) => brief ? brief : super.extractText(page, this.selectors.briefAlt)),
+					super.extractMany(page, this.selectors.animateur)
+						.then((animateurs) => animateurs.length > 0 ? animateurs : super.extractMany(page, this.selectors.animateurAlt).then((animateurs) => animateurs.map((animateur) => animateur.replace('by', '').trim()))),
+					this.extractProgramme(page).then((programme) => Object.keys(programme).length > 0 ? programme : this.extractProgrammeAlt(page)),
 					super
 						.extractText(page, this.selectors.duration)
-						.then((time) => this.convertToHHMM(time)),
+						.then((time) => this.convertToHHMM(time))
+						.catch(() =>
+							super.extractText(page, this.selectors.durationAlt).then((time) => this.convertToHHMM(time))),
 				]);
 			const languages = ["english"];
 			return {
@@ -115,6 +148,8 @@ class PluralSight extends Scraper {
 				animateur,
 				languages,
 			};
+
+
 		} catch (error) {
 			console.error("Error scraping course data:", error);
 			return null;
