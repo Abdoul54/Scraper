@@ -1,13 +1,17 @@
 const express = require("express");
+const cron = require('node-cron')
+const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer')
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
-
+const requests = []
 // Middleware to parse JSON bodies
 app.use(express.json());
 
 // Middleware to log requests
 app.use((req, res, next) => {
+  requests.push({ "url": req.url, "method": req.method, "body": req.body, "query": req.query, "params": req.params, "timestamp": new Date().toLocaleString(), "ip address": req.headers["x-forwarded-for"] || req.connection.remoteAddress })
   console.log("========================================");
   console.log("Request received");
   console.log(`Request received at ${new Date().toLocaleString()}`);
@@ -103,7 +107,45 @@ app.get("/api/health", async (req, res) => {
     res.status(500).json({ message: "API is not working" });
   }
 });
+cron.schedule('0 */6 * * * *', () => {
+  sendEmail();
+  console.log('Requests Email has been sent!');
+});
+
+/**
+ * Function to send an email with the requests
+ */
+function sendEmail() {
+
+  // Configure transporter (replace with your credentials)
+  var transporter = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: "7f49ae0f369f1c",
+      pass: "6e82c5064af227"
+    }
+  });
+
+  // Message options
+  const mailOptions = {
+    from: 'scraper@email.com',
+    to: 'molscraper@email.com',
+    subject: 'Requests in the last 6 hours',
+    text: requests
+  };
+
+  // Send email
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+}
 
 app.listen(port, host, () => {
   console.log(`Server Is Running Successfully!`);
 });
+
