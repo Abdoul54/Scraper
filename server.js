@@ -106,7 +106,7 @@ app.get("/api/health", async (req, res) => {
     res.status(500).json({ message: "API is not working" });
   }
 });
-cron.schedule('0 */6 * * * *', () => {
+cron.schedule('0 */6 * * *', () => {
   try {
     const requestsText = requests.map(req => JSON.stringify(req)).join('\n\n');
     sendEmail(requestsText);
