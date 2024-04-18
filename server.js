@@ -1,7 +1,6 @@
 const express = require("express");
 const cron = require('node-cron')
 const nodemailer = require('nodemailer');
-const nodemailer = require('nodemailer')
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
