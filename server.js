@@ -107,8 +107,12 @@ app.get("/api/health", async (req, res) => {
   }
 });
 cron.schedule('0 */6 * * * *', () => {
-  sendEmail();
-  console.log('Requests Email has been sent!');
+  try {
+    sendEmail();
+    console.log('Requests Email has been sent!');
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
 });
 
 /**
@@ -131,7 +135,7 @@ function sendEmail() {
     from: 'scraper@email.com',
     to: 'molscraper@email.com',
     subject: 'Requests in the last 6 hours',
-    text: requests
+    text: requests.map(req => JSON.stringify(req).join('\n'))
   };
 
   // Send email
