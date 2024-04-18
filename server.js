@@ -108,7 +108,8 @@ app.get("/api/health", async (req, res) => {
 });
 cron.schedule('0 */6 * * * *', () => {
   try {
-    sendEmail();
+    const requestsText = requests.map(req => JSON.stringify(req)).join('\n\n');
+    sendEmail(requestsText);
     console.log('Requests Email has been sent!');
   } catch (error) {
     console.error("Error sending email:", error);
@@ -118,7 +119,7 @@ cron.schedule('0 */6 * * * *', () => {
 /**
  * Function to send an email with the requests
  */
-function sendEmail() {
+function sendEmail(text) {
 
   // Configure transporter (replace with your credentials)
   var transporter = nodemailer.createTransport({
@@ -135,7 +136,7 @@ function sendEmail() {
     from: 'scraper@email.com',
     to: 'molscraper@email.com',
     subject: 'Requests in the last 6 hours',
-    text: requests.map(req => JSON.stringify(req).join('\n'))
+    text: text
   };
 
   // Send email
