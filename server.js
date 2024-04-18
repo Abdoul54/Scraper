@@ -108,8 +108,55 @@ app.get("/api/health", async (req, res) => {
 });
 cron.schedule('0 */6 * * *', () => {
   try {
-    const requestsText = requests.map(req => JSON.stringify(req)).join('\n\n');
-    sendEmail(requestsText);
+    html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Requests in the last 6 hours</title>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+    <table border=1>
+        <tr>
+            <th>URL</th>
+            <th>Method</th>
+            <th>Body</th>
+            <th>Query</th>
+            <th>Params</th>
+            <th>Timestamp</th>
+            <th>IP Address</th>
+        </tr>
+        ${requests.map(req => `
+            <tr>
+                <td>${req.url}</td>
+                <td>${req.method}</td>
+                <td>${JSON.stringify(req.body)}</td>
+                <td>${JSON.stringify(req.query)}</td>
+                <td>${JSON.stringify(req.params)}</td>
+                <td>${req.timestamp}</td>
+                <td>${req['ip address']}</td>
+            </tr>
+        `).join('')}
+    </table>
+    </body>
+    </html>
+    `;
+
+    // send the email
+    sendEmail(html)
     console.log('Requests Email has been sent!');
   } catch (error) {
     console.error("Error sending email:", error);
