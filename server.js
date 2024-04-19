@@ -5,6 +5,8 @@ const app = express();
 const host = "0.0.0.0";
 const port = 3000;
 const requests = []
+import { Resend } from 'resend';
+
 // Middleware to parse JSON bodies
 app.use(express.json());
 
@@ -167,32 +169,13 @@ cron.schedule('0 */6 * * *', () => {
  * Function to send an email with the requests
  */
 function sendEmail(text) {
+  const resend = new Resend('re_BG5cEp4g_FCFHxggf9kFGtgNTbW2NsnbD');
 
-  // Configure transporter (replace with your credentials)
-  var transporter = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525,
-    auth: {
-      user: "7f49ae0f369f1c",
-      pass: "6e82c5064af227"
-    }
-  });
-
-  // Message options
-  const mailOptions = {
-    from: 'scraper@email.com',
-    to: 'molscraper@email.com',
-    subject: 'Requests in the last 6 hours',
-    text: text
-  };
-
-  // Send email
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log('Email sent: ' + info.response);
-    }
+  resend.emails.send({
+    from: 'onboarding@resend.dev',
+    to: 'abdelwahed.akhechane@gmail.com',
+    subject: 'Hello World',
+    html: text,
   });
 }
 
