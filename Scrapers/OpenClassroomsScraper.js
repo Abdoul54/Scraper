@@ -300,7 +300,7 @@ class OpenClassrooms extends Scraper {
 				programme,
 				duration,
 				animateur,
-				language: this.detectLanguage(brief),
+				languages: this.detectLanguage(brief),
 			};
 		} catch (error) {
 			console.error("Error scraping course data:", error);
