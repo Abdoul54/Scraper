@@ -1,11 +1,11 @@
 const express = require("express");
 const cron = require('node-cron')
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
 const app = express();
 const host = "0.0.0.0";
 const port = 3000;
 const requests = []
-import { Resend } from 'resend';
+const resend = require('resend');
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -169,9 +169,9 @@ cron.schedule('0 */6 * * *', () => {
  * Function to send an email with the requests
  */
 function sendEmail(text) {
-  const resend = new Resend('re_BG5cEp4g_FCFHxggf9kFGtgNTbW2NsnbD');
+  const resender = new resend.Resend('re_BG5cEp4g_FCFHxggf9kFGtgNTbW2NsnbD');
 
-  resend.emails.send({
+  resender.emails.send({
     from: 'onboarding@resend.dev',
     to: 'abdelwahed.akhechane@gmail.com',
     subject: 'Hello World',
