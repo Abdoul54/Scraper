@@ -174,9 +174,12 @@ class Udemy extends Scraper {
 					super
 						.extractMany(page, this.selectors.brief)
 						.then((paragraphs) => {
+							let firstParagraph = paragraphs[0];
+							paragraphs[0] = "paragraph 1";
 							let index = paragraphs.findIndex((paragraph) =>
 								paragraph.endsWith(":")
 							);
+							paragraphs[0] = firstParagraph;
 							return index !== -1
 								? paragraphs.slice(0, index)
 								: paragraphs;
