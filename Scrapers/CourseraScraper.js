@@ -15,7 +15,6 @@ class Coursera extends Scraper {
 	 */
 	constructor(url) {
 		super("Coursera");
-		this.url = url;
 		this.selectors = {
 			name: "//h1[@data-e2e='hero-title']",
 			orga: "//*[@id='courses']/div/div/div/div[3]/div/div[2]/div[2]/div/div[2]/a/span",
@@ -30,7 +29,6 @@ class Coursera extends Scraper {
 				'//*[@id="rendered-content"]/div/main/section[2]/div/div/div[1]/div[2]/section/div[2]/div[3]/div[1]',
 			languages: "//*[@role='dialog']/div[2]/div[2]/p[2]",
 		};
-		this.type = this.checkType(url);
 	}
 
 	/**
@@ -276,14 +274,15 @@ class Coursera extends Scraper {
 	 * @method
 	 * @async
 	 */
-	async scrape() {
+	async scrape(url) {
 		try {
 			let languages;
-			if (!(await this.checkURLExists(this.url))) {
+			if (!(await this.checkURLExists(url))) {
 				throw new Error("URL does not exist");
 			}
-			var { browser, page } = await super.launchBrowser(this.url);
-
+			var { browser, page } = await super.launchBrowser(url);
+			this.checkType(url)
+			
 			if (
 				await super.checkElementExistence(
 					page,
@@ -319,7 +318,7 @@ class Coursera extends Scraper {
 			return {
 				title,
 				platform: this.platform,
-				url: this.url,
+				url,
 				orga,
 				brief,
 				programme,
