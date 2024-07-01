@@ -61,8 +61,8 @@ class Coursera extends Scraper {
 		let result = url.includes("specializations")
 			? "specialization"
 			: url.includes("learn")
-			? "module"
-			: "certificate";
+				? "module"
+				: "certificate";
 		if (result === "module") {
 			this.switchToModules(this.selectors);
 		}
@@ -282,7 +282,7 @@ class Coursera extends Scraper {
 			}
 			var { browser, page } = await super.launchBrowser(url);
 			this.checkType(url)
-			
+
 			if (
 				await super.checkElementExistence(
 					page,
@@ -305,8 +305,8 @@ class Coursera extends Scraper {
 							brief.map((el) => el.trim()).join(" ")
 						),
 					this.extractProgramme(page),
-					this.extractDuration(page, this.selectors.duration).then(
-						(duration) => this.convertDurationToHHMM(...duration)
+					await super.extractText(page, this.selectors.duration).then(
+						(duration) => this.convertDurationToHHMM(duration)
 					),
 					super
 						.extractMany(page, this.selectors.animateur)
